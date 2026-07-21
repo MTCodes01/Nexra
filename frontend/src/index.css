@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-gray-950 text-white;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+  }
+
+  /* Dark date input */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) opacity(0.5);
+    cursor: pointer;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600;
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid theme('colors.purple.500');
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    @apply relative overflow-hidden rounded-2xl border border-gray-700/40 bg-gray-900/60 backdrop-blur-md;
+  }
+
+  /* Gradient button */
+  .btn-primary {
+    @apply px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white font-semibold text-sm transition-all duration-200 shadow-lg shadow-purple-900/30 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 rounded-xl bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700/40 text-gray-300 hover:text-white text-sm font-medium transition-colors;
+  }
+}
+
+@layer utilities {
+  .border-3 {
+    border-width: 3px;
+  }
+
+  /* PDF canvas rendering quality */
+  canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+
+  /* Prevent text selection in viewer */
+  .no-select {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}

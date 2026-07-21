@@ -1,0 +1,40 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Viewer {
+  id        String   @id @default(uuid())
+  name      String
+  dob       String
+  ip        String
+  browser   String
+  sessionId String   @unique
+  joinTime  DateTime @default(now())
+  lastSeen  DateTime @updatedAt
+  isOnline  Boolean  @default(true)
+}
+
+model HostConfig {
+  id           Int    @id @default(autoincrement())
+  username     String @default("Sreedev")
+  passwordHash String
+}
+
+model PresentationState {
+  id             Int      @id @default(autoincrement())
+  activeFile     String?
+  currentSlide   Int      @default(1)
+  totalSlides    Int      @default(0)
+  isStarted      Boolean  @default(false)
+  isBlackScreen  Boolean  @default(false)
+  presenterNotes String   @default("{}")
+  updatedAt      DateTime @updatedAt
+}
