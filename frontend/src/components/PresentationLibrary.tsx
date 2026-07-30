@@ -43,7 +43,9 @@ const PresentationLibrary = memo(function PresentationLibrary({
     setUploadProgress(`Uploading ${file.name}…`);
 
     try {
-      const { filename } = await uploadPresentation(file);
+      const { filename } = await uploadPresentation(file, (percent) => {
+        setUploadProgress(`Uploading ${file.name} (${percent}%)`);
+      });
       setUploadProgress('Upload complete!');
       await load();
       setTimeout(() => setUploadProgress(''), 2000);
@@ -83,6 +85,18 @@ const PresentationLibrary = memo(function PresentationLibrary({
 
   return (
     <div className="space-y-4">
+      {/* Header & Refresh */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white">Your Library</h2>
+        <button
+          onClick={load}
+          disabled={isLoading}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-300 text-xs font-medium transition-colors"
+        >
+          <span>🔄</span> Refresh
+        </button>
+      </div>
+
       {/* Upload */}
       <div className="relative">
         <label
@@ -100,7 +114,7 @@ const PresentationLibrary = memo(function PresentationLibrary({
             <p className="text-white font-medium text-sm">
               {isUploading ? uploadProgress : 'Upload New Presentation'}
             </p>
-            <p className="text-gray-500 text-xs">PDF files up to 100MB</p>
+            <p className="text-gray-500 text-xs">PDF files up to 300MB</p>
           </div>
           {!isUploading && (
             <div className="ml-auto px-3 py-1.5 rounded-lg bg-purple-600/80 text-white text-xs font-medium">

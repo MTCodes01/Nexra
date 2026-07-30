@@ -45,7 +45,7 @@ async function bootstrap() {
   // Multipart (for PDF upload)
   await fastify.register(multipart, {
     limits: {
-      fileSize: 100 * 1024 * 1024, // 100 MB max PDF
+      fileSize: 300 * 1024 * 1024, // 300 MB max PDF
     },
   });
 

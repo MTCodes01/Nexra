@@ -13,6 +13,7 @@ import HostControls from '../components/HostControls';
 import AudienceTable from '../components/AudienceTable';
 import PresentationLibrary from '../components/PresentationLibrary';
 import PresenterNotesPanel from '../components/PresenterNotes';
+import RevealModal from '../components/RevealModal';
 import { PresentationStatus } from '../types';
 
 // ── Host Login Gate ────────────────────────────────────────────────────────────
@@ -166,7 +167,7 @@ const ChangePasswordModal = memo(function ChangePasswordModal({
 type Tab = 'presentation' | 'audience' | 'library' | 'settings';
 
 export default function HostPage() {
-  const { token: viewerToken, setToken, pdfUrl, pdfToken, viewerCount, isConnected } = usePresentationContext();
+  const { token: viewerToken, setToken, pdfUrl, pdfToken, viewerCount, isConnected, showReveal, dismissReveal } = usePresentationContext();
 
   const [hostToken, setHostToken] = useState<string | null>(localStorage.getItem('host_token'));
   const [activeTab, setActiveTab] = useState<Tab>('presentation');
@@ -599,6 +600,9 @@ export default function HostPage() {
       {showChangePassword && (
         <ChangePasswordModal onClose={() => setShowChangePassword(false)} />
       )}
+
+      {/* Reveal modal */}
+      <RevealModal visible={showReveal} onDismiss={dismissReveal} />
     </div>
   );
 }

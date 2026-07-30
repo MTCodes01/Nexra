@@ -69,16 +69,46 @@ export async function getLibrary(): Promise<{ files: PresentationFile[]; activeF
   return handleResponse(res);
 }
 
-export async function uploadPresentation(file: File): Promise<{ filename: string }> {
-  const token = getHostToken()!;
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await fetch(`${BASE}/host/library/upload`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
+export function uploadPresentation(
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<{ filename: string }> {
+  return new Promise((resolve, reject) => {
+    const token = getHostToken();
+    if (!token) return reject(new Error('Not authenticated'));
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${BASE}/host/library/upload`);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      try {
+        const res = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(res);
+        } else {
+          reject(new Error(res.error || `HTTP ${xhr.status}`));
+        }
+      } catch (err) {
+        reject(new Error('Failed to parse response'));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.send(formData);
   });
-  return handleResponse(res);
 }
 
 export async function selectPresentation(filename: string): Promise<void> {

@@ -100,7 +100,7 @@ export async function hostRoutes(fastify: FastifyInstance) {
           break;
         }
         case 'reveal': {
-          broadcastToViewers({ type: 'reveal', activeFile: state.activeFile });
+          broadcast({ type: 'reveal', activeFile: state.activeFile });
           break;
         }
         case 'setTotalSlides': {
