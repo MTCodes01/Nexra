@@ -28,7 +28,7 @@ export default function HostPage() {
   const loadLibrary = async () => {
     try {
       const res = await fetch('http://localhost:1050/api/presentation/library', {
-        headers: { Authorization: `Bearer ${hostToken}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -52,7 +52,7 @@ export default function HostPage() {
     try {
       const res = await fetch('http://localhost:1050/api/presentation/library/upload', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${hostToken}` },
+        credentials: 'include',
         body: formData,
       });
       if (res.ok) {
@@ -69,7 +69,7 @@ export default function HostPage() {
     try {
       await fetch(`http://localhost:1050/api/presentation/library/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${hostToken}` }
+        credentials: 'include'
       });
       await loadLibrary();
     } catch (e) {
@@ -81,7 +81,7 @@ export default function HostPage() {
     try {
       await fetch(`http://localhost:1050/api/presentation/library/${id}/duplicate`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${hostToken}` }
+        credentials: 'include'
       });
       await loadLibrary();
     } catch (e) {
@@ -95,9 +95,9 @@ export default function HostPage() {
     try {
       await fetch(`http://localhost:1050/api/presentation/library/${id}/rename`, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${hostToken}` 
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ title: newTitle })
       });
@@ -111,9 +111,9 @@ export default function HostPage() {
     try {
       const res = await fetch('http://localhost:1050/api/session', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${hostToken}` 
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ presentationId: id })
       });

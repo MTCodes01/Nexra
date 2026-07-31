@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { usePresentationContext } from '../context/PresentationContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { setHostToken } = usePresentationContext();
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +24,7 @@ export default function LoginPage() {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const res = await fetch(`http://localhost:1050${endpoint}`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
@@ -29,7 +32,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Authentication failed');
 
-      localStorage.setItem('host_token', data.token);
+      setHostToken(data.hostId);
       navigate('/host', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Failed to authenticate');

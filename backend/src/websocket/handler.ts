@@ -33,9 +33,31 @@ export function setupWebSocket(server: Server) {
         const msg = JSON.parse(data.toString());
         
         if (msg.type === 'join') {
-          ws.role = msg.role;
           ws.sessionCode = msg.sessionCode;
           ws.connectionId = msg.connectionId || 'unknown';
+          
+          if (msg.role === 'host') {
+            // Validate host auth via cookie
+            const cookieHeader = request.headers.cookie || '';
+            const cookies = require('cookie').parse(cookieHeader);
+            const token = cookies.accessToken;
+            
+            if (!token) {
+              ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized: No token' }));
+              ws.close(4001, 'Unauthorized');
+              return;
+            }
+            
+            const payload = require('../services/jwt').verifyAccessToken(token);
+            if (!payload || payload.role !== 'host') {
+              ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized: Invalid token' }));
+              ws.close(4001, 'Unauthorized');
+              return;
+            }
+            ws.role = 'host';
+          } else {
+            ws.role = 'viewer';
+          }
 
           if (!rooms.has(ws.sessionCode)) {
             rooms.set(ws.sessionCode, new Set());

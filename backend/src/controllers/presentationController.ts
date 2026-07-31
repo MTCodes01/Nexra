@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { createWriteStream, existsSync, mkdirSync, unlinkSync, statSync, copyFileSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, unlinkSync, copyFileSync, openSync, readSync, closeSync } from 'fs';
 import { join, basename, extname } from 'path';
 import { pipeline } from 'stream/promises';
+import { v4 as uuidv4 } from 'uuid';
 import prisma from '../prisma/client';
 import { requireHost } from '../middlewares/auth';
 import { MultipartFile } from '@fastify/multipart';
@@ -15,6 +16,28 @@ function getStoragePath(): string {
   return absolute;
 }
 
+function verifyMagicBytes(filePath: string): boolean {
+  try {
+    const fd = openSync(filePath, 'r');
+    const buffer = Buffer.alloc(5);
+    readSync(fd, buffer, 0, 5, 0);
+    closeSync(fd);
+    
+    // PDF Magic Bytes: %PDF-
+    if (buffer.toString('utf-8', 0, 5) === '%PDF-') return true;
+    
+    // PPTX Magic Bytes (ZIP): PK\x03\x04
+    if (buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04) return true;
+    
+    // PPT Magic Bytes (OLE): \xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1
+    if (buffer[0] === 0xD0 && buffer[1] === 0xCF && buffer[2] === 0x11 && buffer[3] === 0xE0) return true;
+    
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function uploadPresentation(request: FastifyRequest, reply: FastifyReply) {
   const host = requireHost(request, reply);
   if (!host) return;
@@ -24,7 +47,7 @@ export async function uploadPresentation(request: FastifyRequest, reply: Fastify
   try {
     uploadFile = await (request as any).file();
   } catch (err) {
-    return reply.status(400).send({ error: 'No file uploaded' });
+    return reply.status(400).send({ error: 'No file uploaded or file too large' });
   }
 
   if (!uploadFile) {
@@ -32,10 +55,17 @@ export async function uploadPresentation(request: FastifyRequest, reply: Fastify
   }
 
   const originalName = uploadFile.filename;
-  const safeName = `${Date.now()}_${basename(originalName).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+  // Use UUID instead of original filename to prevent Path Traversal and Collisions
+  const safeName = `${uuidv4()}${extname(originalName).toLowerCase()}`;
   const destPath = join(storagePath, safeName);
 
   await pipeline(uploadFile.file, createWriteStream(destPath));
+
+  // Verify magic bytes after writing to avoid RAM exhaustion
+  if (!verifyMagicBytes(destPath)) {
+    unlinkSync(destPath);
+    return reply.status(400).send({ error: 'Invalid file type. Only PDF, PPT, and PPTX are allowed.' });
+  }
 
   const presentation = await prisma.presentation.create({
     data: {

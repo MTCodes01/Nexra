@@ -8,12 +8,26 @@ datasource db {
 }
 
 model Host {
-  id           String         @id @default(uuid())
-  username     String         @unique
-  passwordHash String
-  presentations Presentation[]
-  sessions      Session[]
-  activityLogs  ActivityLog[]
+  id                  String         @id @default(uuid())
+  username            String         @unique
+  passwordHash        String
+  failedLoginAttempts Int            @default(0)
+  lockoutUntil        DateTime?
+  presentations       Presentation[]
+  sessions            Session[]
+  activityLogs        ActivityLog[]
+  refreshTokens       RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  hostId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+
+  host Host @relation(fields: [hostId], references: [id], onDelete: Cascade)
 }
 
 model Presentation {

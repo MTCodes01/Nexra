@@ -27,13 +27,14 @@ interface PresentationContextValue {
   
   // Host
   hostToken: string | null;
+  setHostToken: (token: string | null) => void;
   changeHostSlide: (slide: number) => void;
 }
 
 const PresentationContext = createContext<PresentationContextValue | null>(null);
 
 export function PresentationProvider({ children }: { children: React.ReactNode }) {
-  const [hostToken] = useState<string | null>(localStorage.getItem('host_token'));
+  const [hostToken, setHostToken] = useState<string | null>(null);
   
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [presentationId, setPresentationId] = useState<string | null>(null);
@@ -48,6 +49,18 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    fetch('http://localhost:1050/api/auth/me', { credentials: 'include' })
+      .then(res => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error('Not auth');
+      })
+      .then(data => setHostToken(data.hostId))
+      .catch(() => setHostToken(null));
+  }, []);
 
   const leaveSession = useCallback(() => {
     if (wsRef.current) {
@@ -73,7 +86,9 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
 
   const joinSession = useCallback(async (code: string, role: 'viewer' | 'host' = 'viewer') => {
     try {
-      const res = await fetch(`http://localhost:1050/api/session/${code}`);
+      const res = await fetch(`http://localhost:1050/api/session/${code}`, {
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error('Session not found');
       const data = await res.json();
       
@@ -154,6 +169,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         joinSession,
         leaveSession,
         hostToken,
+        setHostToken,
         changeHostSlide
       }}
     >

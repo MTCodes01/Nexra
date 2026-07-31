@@ -1,14 +1,25 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { verifyToken, isHost, HostPayload } from '../services/jwt';
+import '@fastify/cookie';
+import { verifyAccessToken, isHost, HostPayload } from '../services/jwt';
 
 export function requireHost(request: FastifyRequest, reply: FastifyReply): HostPayload | null {
-  const auth = request.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) {
+  // First try to read from cookie
+  let token = request.cookies?.accessToken;
+  
+  // Fallback to Authorization header if no cookie (for API clients)
+  if (!token) {
+    const auth = request.headers.authorization;
+    if (auth?.startsWith('Bearer ')) {
+      token = auth.slice(7);
+    }
+  }
+
+  if (!token) {
     reply.status(401).send({ error: 'Unauthorized' });
     return null;
   }
-  const token = auth.slice(7);
-  const payload = verifyToken(token);
+  
+  const payload = verifyAccessToken(token);
   if (!isHost(payload)) {
     reply.status(403).send({ error: 'Forbidden' });
     return null;

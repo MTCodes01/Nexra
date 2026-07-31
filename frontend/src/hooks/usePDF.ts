@@ -49,12 +49,7 @@ export function usePDF({ url, token, enabled = true }: UsePDFOptions): UsePDFRet
     setIsLoading(true);
     setError(null);
 
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    fetch(url, { headers })
+    fetch(url, { credentials: 'include' })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.arrayBuffer();

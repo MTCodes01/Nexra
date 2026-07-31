@@ -10,9 +10,7 @@ function getHostToken(): string | null {
   return localStorage.getItem('host_token');
 }
 
-function authHeaders(token: string): HeadersInit {
-  return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-}
+// We now use cookies via credentials: 'include'
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -45,10 +43,9 @@ export async function loginHost(password: string) {
 // ─── Presentation ─────────────────────────────────────────────────────────────
 
 export async function getPresentationStatus(): Promise<PresentationStatus> {
-  const token = getViewerToken() || getHostToken();
-  if (!token) throw new Error('Not authenticated');
   const res = await fetch(`${BASE}/presentation/status`, {
-    headers: authHeaders(token),
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
   });
   return handleResponse<PresentationStatus>(res);
 }
@@ -65,7 +62,7 @@ export function getPDFAuthToken(): string | null {
 
 export async function getLibrary(): Promise<{ files: PresentationFile[]; activeFile: string | null }> {
   const token = getHostToken()!;
-  const res = await fetch(`${BASE}/host/library`, { headers: authHeaders(token) });
+  const res = await fetch(`${BASE}/host/library`, { credentials: 'include', headers: { 'Content-Type': 'application/json' } });
   return handleResponse(res);
 }
 
@@ -115,7 +112,7 @@ export async function selectPresentation(filename: string): Promise<void> {
   const token = getHostToken()!;
   const res = await fetch(`${BASE}/host/library/select`, {
     method: 'PUT',
-    headers: authHeaders(token),
+    credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ filename }),
   });
   return handleResponse(res);
@@ -125,7 +122,7 @@ export async function deletePresentation(filename: string): Promise<void> {
   const token = getHostToken()!;
   const res = await fetch(`${BASE}/host/library/${encodeURIComponent(filename)}`, {
     method: 'DELETE',
-    headers: authHeaders(token),
+    credentials: 'include', headers: { 'Content-Type': 'application/json' },
   });
   return handleResponse(res);
 }
@@ -134,7 +131,7 @@ export async function deletePresentation(filename: string): Promise<void> {
 
 export async function getAudience(): Promise<{ viewers: Viewer[] }> {
   const token = getHostToken()!;
-  const res = await fetch(`${BASE}/host/audience`, { headers: authHeaders(token) });
+  const res = await fetch(`${BASE}/host/audience`, { credentials: 'include', headers: { 'Content-Type': 'application/json' } });
   return handleResponse(res);
 }
 
@@ -142,7 +139,7 @@ export async function clearAudience(): Promise<void> {
   const token = getHostToken()!;
   const res = await fetch(`${BASE}/host/audience`, {
     method: 'DELETE',
-    headers: authHeaders(token),
+    credentials: 'include', headers: { 'Content-Type': 'application/json' },
   });
   return handleResponse(res);
 }
@@ -157,7 +154,7 @@ export async function sendControl(action: string, params?: { slide?: number; tot
   const token = getHostToken()!;
   const res = await fetch(`${BASE}/host/presentation/control`, {
     method: 'POST',
-    headers: authHeaders(token),
+    credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, ...params }),
   });
   return handleResponse<PresentationStatus & { viewerCount: number }>(res);
@@ -165,7 +162,7 @@ export async function sendControl(action: string, params?: { slide?: number; tot
 
 export async function getHostState(): Promise<PresentationStatus & { viewerCount: number }> {
   const token = getHostToken()!;
-  const res = await fetch(`${BASE}/host/state`, { headers: authHeaders(token) });
+  const res = await fetch(`${BASE}/host/state`, { credentials: 'include', headers: { 'Content-Type': 'application/json' } });
   return handleResponse(res);
 }
 
@@ -175,7 +172,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
   const token = getHostToken()!;
   const res = await fetch(`${BASE}/host/password`, {
     method: 'PUT',
-    headers: authHeaders(token),
+    credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ currentPassword, newPassword }),
   });
   return handleResponse(res);
@@ -185,7 +182,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
 export async function getNotes(): Promise<{ notes: PresenterNotes }> {
   const token = getHostToken()!;
-  const res = await fetch(`${BASE}/host/notes`, { headers: authHeaders(token) });
+  const res = await fetch(`${BASE}/host/notes`, { credentials: 'include', headers: { 'Content-Type': 'application/json' } });
   return handleResponse(res);
 }
 
@@ -193,7 +190,7 @@ export async function saveNotes(notes: PresenterNotes): Promise<void> {
   const token = getHostToken()!;
   const res = await fetch(`${BASE}/host/notes`, {
     method: 'PUT',
-    headers: authHeaders(token),
+    credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ notes }),
   });
   return handleResponse(res);
@@ -203,7 +200,7 @@ export async function clearAllData(): Promise<void> {
   const token = getHostToken()!;
   const res = await fetch(`${BASE}/host/data/clear`, {
     method: 'POST',
-    headers: authHeaders(token),
+    credentials: 'include', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   });
   return handleResponse(res);

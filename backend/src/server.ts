@@ -29,19 +29,43 @@ const fastify = Fastify({
 
 async function bootstrap() {
   await fastify.register(cors, {
-    origin: true,
+    origin: true, // In production, this should be restricted
     credentials: true,
   });
 
+  await fastify.register(require('@fastify/helmet'), {
+    contentSecurityPolicy: false, // We'll disable it for static assets, or configure strictly
+    crossOriginEmbedderPolicy: false, // Prevents PDF loading from some clients
+  });
+
+  await fastify.register(require('@fastify/cookie'), {
+    secret: process.env.COOKIE_SECRET || process.env.JWT_SECRET || 'cookie-secret',
+    parseOptions: {} 
+  });
+
+  await fastify.register(require('@fastify/rate-limit'), {
+    max: 100, // global max 100 requests per minute
+    timeWindow: '1 minute'
+  });
+
   await fastify.register(multipart, {
-    limits: { fileSize: 300 * 1024 * 1024 },
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   });
 
-  await fastify.register(staticFiles, {
-    root: storagePath,
-    prefix: '/files/',
+  fastify.setErrorHandler((error, request, reply) => {
+    // Log the actual error internally
+    request.log.error(error);
+    const err = error as any;
+    
+    // Only send the generic message to the client unless it's a known Fastify error (like rate limit)
+    if (err.statusCode === 429) {
+      reply.status(429).send({ error: 'Rate limit exceeded, retry in 1 minute' });
+    } else if (err.validation) {
+      reply.status(400).send({ error: 'Validation error' });
+    } else {
+      reply.status(500).send({ error: 'Internal Server Error' });
+    }
   });
-
   if (IS_PRODUCTION) {
     const frontendDist = join(__dirname, '../../frontend/dist');
     if (existsSync(frontendDist)) {
