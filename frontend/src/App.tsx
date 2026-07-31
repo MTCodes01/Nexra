@@ -5,6 +5,7 @@ import { PresentationProvider } from './context/PresentationContext';
 const LoginPage = React.lazy(() => import('./routes/LoginPage'));
 const ViewerPage = React.lazy(() => import('./routes/ViewerPage'));
 const HostPage = React.lazy(() => import('./routes/HostPage'));
+const PresenterPage = React.lazy(() => import('./routes/PresenterPage'));
 
 const LoadingFallback = () => (
   <div className="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -19,8 +20,10 @@ export default function App() {
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             <Route path="/" element={<LoginPage />} />
-            <Route path="/viewer" element={<ViewerPage />} />
+            <Route path="/join" element={<ViewerPage />} />
+            <Route path="/p/:code" element={<ViewerPage />} />
             <Route path="/host" element={<HostPage />} />
+            <Route path="/present/:code" element={<PresenterPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

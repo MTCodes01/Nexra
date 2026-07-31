@@ -1,140 +1,160 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { WSMessage, PresentationStatus } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { getPresentationStatus, getPDFUrl, getPDFAuthToken } from '../api/client';
 
 interface PresentationContextValue {
+  // Session details
+  sessionCode: string | null;
+  presentationId: string | null;
+  presentationTitle: string | null;
+  
   // State
   currentSlide: number;
   totalSlides: number;
-  isStarted: boolean;
-  isBlackScreen: boolean;
   viewerCount: number;
-  activeFile: string | null;
-  showReveal: boolean;
-  dismissReveal: () => void;
-
+  
+  // Modes
+  isManualMode: boolean;
+  setIsManualMode: (manual: boolean) => void;
+  syncSlide: (slide: number) => void;
+  
   // Connection
   isConnected: boolean;
   isReconnecting: boolean;
 
-  // PDF
-  pdfUrl: string | null;
-  pdfToken: string | null;
-
-  // Auth
-  token: string | null;
-  setToken: (t: string | null) => void;
-
-  // Host-only setters (for optimistic updates)
-  setCurrentSlide: (n: number) => void;
-  setTotalSlides: (n: number) => void;
-  setIsStarted: (v: boolean) => void;
-  setIsBlackScreen: (v: boolean) => void;
+  // Init
+  joinSession: (code: string, role?: 'viewer' | 'host') => Promise<boolean>;
+  leaveSession: () => void;
+  
+  // Host
+  hostToken: string | null;
+  changeHostSlide: (slide: number) => void;
 }
 
 const PresentationContext = createContext<PresentationContextValue | null>(null);
 
 export function PresentationProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(
-    sessionStorage.getItem('viewer_token') || localStorage.getItem('host_token')
-  );
+  const [hostToken] = useState<string | null>(localStorage.getItem('host_token'));
+  
+  const [sessionCode, setSessionCode] = useState<string | null>(null);
+  const [presentationId, setPresentationId] = useState<string | null>(null);
+  const [presentationTitle, setPresentationTitle] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(1);
+  const [hostSlide, setHostSlide] = useState(1);
   const [totalSlides, setTotalSlides] = useState(0);
-  const [isStarted, setIsStarted] = useState(false);
-  const [isBlackScreen, setIsBlackScreen] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
-  const [activeFile, setActiveFile] = useState<string | null>(null);
-  const [showReveal, setShowReveal] = useState(false);
+  
+  const [isManualMode, setIsManualMode] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
-  const basePdfUrl = token ? getPDFUrl() : null;
-  const pdfUrl = basePdfUrl && activeFile 
-    ? `${basePdfUrl}?v=${encodeURIComponent(activeFile)}` 
-    : basePdfUrl;
-  const pdfToken = getPDFAuthToken();
+  const wsRef = useRef<WebSocket | null>(null);
 
-  const handleMessage = useCallback((msg: WSMessage) => {
-    // Sync active file whenever ANY server message provides activeFile or filename
-    const file = (msg as any).activeFile || (msg as any).filename;
-    if (file && typeof file === 'string' && file !== activeFile) {
-      setActiveFile(file);
+  const leaveSession = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
     }
+    setSessionCode(null);
+    setPresentationId(null);
+    setIsConnected(false);
+  }, []);
 
-    switch (msg.type) {
-      case 'slideChange':
-        setCurrentSlide(msg.slide);
-        break;
-      case 'presentationStarted':
-        setIsStarted(true);
-        setCurrentSlide(1);
-        if (msg.totalSlides) setTotalSlides(msg.totalSlides);
-        break;
-      case 'presentationEnded':
-        setIsStarted(false);
-        break;
-      case 'viewerCountChanged':
-      case 'viewerConnected':
-      case 'viewerDisconnected':
-        setViewerCount(msg.count);
-        break;
-      case 'blackScreen':
-        setIsBlackScreen(msg.active);
-        break;
-      case 'reveal':
-        setShowReveal(true);
-        break;
-      case 'pdfUpdated':
-        setActiveFile(msg.filename);
-        setCurrentSlide(1);
-        setIsBlackScreen(false);
-        setIsStarted(false);
-        break;
+  const changeHostSlide = useCallback((slide: number) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'slide_change',
+        slide
+      }));
+      // Optimitically update locally
+      setHostSlide(slide);
+      setCurrentSlide(slide);
     }
-  }, [activeFile]);
+  }, []);
 
-  const { isConnected, isReconnecting } = useWebSocket({
-    token,
-    onMessage: handleMessage,
-    enabled: !!token,
-  });
+  const joinSession = useCallback(async (code: string, role: 'viewer' | 'host' = 'viewer') => {
+    try {
+      const res = await fetch(`http://localhost:1050/api/session/${code}`);
+      if (!res.ok) throw new Error('Session not found');
+      const data = await res.json();
+      
+      setSessionCode(data.sessionCode);
+      setPresentationId(data.presentationId);
+      setPresentationTitle(data.presentationTitle);
+      setTotalSlides(data.slideCount || 0);
+      setHostSlide(data.currentSlide);
+      setCurrentSlide(data.currentSlide);
+      
+      // Connect WebSocket
+      const wsUrl = 'ws://localhost:1050/ws';
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+      
+      ws.onopen = () => {
+        setIsConnected(true);
+        setIsReconnecting(false);
+        ws.send(JSON.stringify({
+          type: 'join',
+          role,
+          sessionCode: data.sessionCode,
+          connectionId: Math.random().toString(36).substring(7)
+        }));
+      };
 
-  // Fetch initial status when authenticated or reconnected
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'slide_changed') {
+            setHostSlide(msg.slide);
+          } else if (msg.type === 'viewer_count') {
+            setViewerCount(msg.count);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        setIsReconnecting(true);
+        // Implement exponential backoff reconnect if needed
+      };
+
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  }, []);
+
+  // Sync effect
   useEffect(() => {
-    if (!token) return;
-    getPresentationStatus()
-      .then((status) => {
-        if (status.activeFile) setActiveFile(status.activeFile);
-        if (status.currentSlide) setCurrentSlide(status.currentSlide);
-        if (status.totalSlides) setTotalSlides(status.totalSlides);
-        setIsStarted(status.isStarted);
-        setIsBlackScreen(status.isBlackScreen);
-      })
-      .catch(() => {});
-  }, [token, isConnected]);
+    if (!isManualMode) {
+      setCurrentSlide(hostSlide);
+    }
+  }, [hostSlide, isManualMode]);
 
-  const dismissReveal = useCallback(() => setShowReveal(false), []);
+  const syncSlide = useCallback((slide: number) => {
+    setCurrentSlide(slide);
+  }, []);
 
   return (
     <PresentationContext.Provider
       value={{
+        sessionCode,
+        presentationId,
+        presentationTitle,
         currentSlide,
         totalSlides,
-        isStarted,
-        isBlackScreen,
         viewerCount,
-        activeFile,
-        showReveal,
-        dismissReveal,
+        isManualMode,
+        setIsManualMode,
+        syncSlide,
         isConnected,
         isReconnecting,
-        pdfUrl,
-        pdfToken,
-        token,
-        setToken,
-        setCurrentSlide,
-        setTotalSlides,
-        setIsStarted,
-        setIsBlackScreen,
+        joinSession,
+        leaveSession,
+        hostToken,
+        changeHostSlide
       }}
     >
       {children}

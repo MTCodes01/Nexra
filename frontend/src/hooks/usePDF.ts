@@ -6,7 +6,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.vers
 
 interface UsePDFOptions {
   url: string | null;
-  token: string | null;
+  token?: string | null;
   enabled?: boolean;
 }
 
@@ -32,7 +32,7 @@ export function usePDF({ url, token, enabled = true }: UsePDFOptions): UsePDFRet
   const pdfCacheRef = useRef<Map<string, PDFDocumentProxy>>(new Map());
 
   useEffect(() => {
-    if (!url || !token || !enabled) return;
+    if (!url || !enabled) return;
 
     // Check cache first
     const cached = pdfCacheRef.current.get(url);
@@ -49,9 +49,12 @@ export function usePDF({ url, token, enabled = true }: UsePDFOptions): UsePDFRet
     setIsLoading(true);
     setError(null);
 
-    fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    fetch(url, { headers })
       .then(async (res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.arrayBuffer();

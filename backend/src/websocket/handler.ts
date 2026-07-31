@@ -1,162 +1,107 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { IncomingMessage, Server } from 'http';
-import { verifyToken, isHost } from '../services/jwt';
+import { Server } from 'http';
 import prisma from '../prisma/client';
 
-interface ExtendedWebSocket extends WebSocket {
+interface ExtWebSocket extends WebSocket {
   isAlive: boolean;
-  sessionId?: string;
-  role?: 'viewer' | 'host';
-  isAuthenticated: boolean;
+  role: 'host' | 'viewer';
+  sessionCode: string;
+  connectionId: string;
 }
 
-interface WSMessage {
-  type: string;
-  [key: string]: unknown;
-}
-
-// Connected clients
-const viewers = new Set<ExtendedWebSocket>();
-const hosts = new Set<ExtendedWebSocket>();
-
-export function getViewerCount(): number {
-  return viewers.size;
-}
-
-export function broadcast(data: WSMessage, excludeWs?: WebSocket) {
-  const payload = JSON.stringify(data);
-  const all = new Set([...viewers, ...hosts]);
-  all.forEach((client) => {
-    if (client !== excludeWs && client.readyState === WebSocket.OPEN) {
-      client.send(payload);
-    }
-  });
-}
-
-export function broadcastToViewers(data: WSMessage) {
-  const payload = JSON.stringify(data);
-  viewers.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(payload);
-    }
-  });
-}
-
-export function broadcastToHosts(data: WSMessage) {
-  const payload = JSON.stringify(data);
-  hosts.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(payload);
-    }
-  });
-}
+const wss = new WebSocketServer({ noServer: true });
+const rooms = new Map<string, Set<ExtWebSocket>>();
 
 export function setupWebSocket(server: Server) {
-  const wss = new WebSocketServer({ server, path: '/ws' });
+  server.on('upgrade', (request, socket, head) => {
+    const url = new URL(request.url || '', `http://${request.headers.host}`);
+    if (url.pathname === '/ws') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  });
 
-  // Heartbeat interval — ping every 30 seconds
-  const heartbeatInterval = setInterval(() => {
-    wss.clients.forEach((rawWs) => {
-      const ws = rawWs as ExtendedWebSocket;
-      if (!ws.isAlive) {
-        ws.terminate();
-        return;
-      }
-      ws.isAlive = false;
-      ws.ping();
-    });
-  }, 30_000);
-
-  wss.on('close', () => clearInterval(heartbeatInterval));
-
-  wss.on('connection', (rawWs: WebSocket, req: IncomingMessage) => {
-    const ws = rawWs as ExtendedWebSocket;
+  wss.on('connection', (ws: ExtWebSocket, request) => {
     ws.isAlive = true;
-    ws.isAuthenticated = false;
-
-    ws.on('pong', () => {
-      ws.isAlive = true;
-    });
+    ws.on('pong', () => (ws.isAlive = true));
 
     ws.on('message', async (data) => {
-      let msg: WSMessage;
       try {
-        msg = JSON.parse(data.toString());
-      } catch {
-        return;
-      }
+        const msg = JSON.parse(data.toString());
+        
+        if (msg.type === 'join') {
+          ws.role = msg.role;
+          ws.sessionCode = msg.sessionCode;
+          ws.connectionId = msg.connectionId || 'unknown';
 
-      if (msg.type === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong' }));
-        return;
-      }
+          if (!rooms.has(ws.sessionCode)) {
+            rooms.set(ws.sessionCode, new Set());
+          }
+          rooms.get(ws.sessionCode)!.add(ws);
 
-      if (msg.type === 'identify') {
-        const token = msg.token as string;
-        const payload = verifyToken(token);
-        if (!payload) {
-          ws.send(JSON.stringify({ type: 'error', message: 'Invalid token' }));
-          return;
+          if (ws.role === 'viewer') {
+            await updateViewerCount(ws.sessionCode, 1);
+          }
+        } 
+        else if (msg.type === 'slide_change' && ws.role === 'host') {
+          await prisma.session.update({
+            where: { sessionCode: ws.sessionCode },
+            data: { currentSlide: msg.slide },
+          });
+          broadcastToRoom(ws.sessionCode, { type: 'slide_changed', slide: msg.slide });
         }
-
-        ws.isAuthenticated = true;
-        ws.role = payload.role;
-
-        if (isHost(payload)) {
-          ws.sessionId = 'host';
-          hosts.add(ws);
-          ws.send(JSON.stringify({ type: 'identified', role: 'host' }));
-        } else {
-          ws.sessionId = payload.sessionId;
-          viewers.add(ws);
-
-          // Mark viewer as online in DB
-          await prisma.viewer
-            .updateMany({
-              where: { sessionId: payload.sessionId },
-              data: { isOnline: true },
-            })
-            .catch(() => {});
-
-          const count = viewers.size;
-
-          // Notify all about new viewer
-          broadcast({ type: 'viewerConnected', count });
-          broadcast({ type: 'viewerCountChanged', count });
-
-          ws.send(JSON.stringify({ type: 'identified', role: 'viewer' }));
-        }
-        return;
+      } catch (err) {
+        console.error('WS Error:', err);
       }
-
-      // Ignore unauthenticated messages beyond identify/ping
-      if (!ws.isAuthenticated) return;
     });
 
     ws.on('close', async () => {
-      const wasViewer = viewers.has(ws);
-      viewers.delete(ws);
-      hosts.delete(ws);
-
-      if (wasViewer && ws.sessionId) {
-        await prisma.viewer
-          .updateMany({
-            where: { sessionId: ws.sessionId },
-            data: { isOnline: false },
-          })
-          .catch(() => {});
-
-        const count = viewers.size;
-        broadcast({ type: 'viewerDisconnected', count });
-        broadcast({ type: 'viewerCountChanged', count });
+      if (ws.sessionCode && rooms.has(ws.sessionCode)) {
+        rooms.get(ws.sessionCode)!.delete(ws);
+        if (ws.role === 'viewer') {
+          await updateViewerCount(ws.sessionCode, -1);
+        }
       }
-    });
-
-    ws.on('error', () => {
-      viewers.delete(ws);
-      hosts.delete(ws);
     });
   });
 
-  return wss;
+  const interval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      const extWs = ws as ExtWebSocket;
+      if (!extWs.isAlive) return extWs.terminate();
+      extWs.isAlive = false;
+      extWs.ping();
+    });
+  }, 30000);
+
+  wss.on('close', () => clearInterval(interval));
+}
+
+async function updateViewerCount(sessionCode: string, change: number) {
+  try {
+    const session = await prisma.session.findUnique({ where: { sessionCode } });
+    if (!session) return;
+    const newCount = Math.max(0, session.viewerCount + change);
+    await prisma.session.update({
+      where: { sessionCode },
+      data: { viewerCount: newCount },
+    });
+    broadcastToRoom(sessionCode, { type: 'viewer_count', count: newCount });
+  } catch (error) {
+    console.error('Error updating viewer count:', error);
+  }
+}
+
+function broadcastToRoom(sessionCode: string, message: any) {
+  const room = rooms.get(sessionCode);
+  if (!room) return;
+  const msgStr = JSON.stringify(message);
+  for (const client of room) {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(msgStr);
+    }
+  }
 }

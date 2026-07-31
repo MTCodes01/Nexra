@@ -3,7 +3,7 @@ import { usePDF } from '../hooks/usePDF';
 
 interface PDFViewerProps {
   url: string | null;
-  token: string | null;
+  token?: string | null;
   currentSlide: number;
   onTotalPagesLoaded?: (n: number) => void;
   className?: string;
@@ -24,7 +24,7 @@ const PDFViewer = memo(function PDFViewer({
   const { pdfDoc, totalPages, isLoading, error, renderPage } = usePDF({
     url,
     token,
-    enabled: !!url && !!token,
+    enabled: !!url,
   });
 
   // Notify parent when PDF loads
