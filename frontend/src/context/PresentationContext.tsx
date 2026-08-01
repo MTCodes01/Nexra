@@ -40,6 +40,7 @@ interface PresentationContextValue {
   changeHostSlide: (slide: number) => void;
   updateSettings: (newSettings: Partial<SessionSettings>) => Promise<void>;
   regenerateSessionCode: () => Promise<void>;
+  logout: () => Promise<void>;
   
   // Presenter features
   isBlackout: boolean;
@@ -107,6 +108,19 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
     };
     
     checkAuth();
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setHostToken(null);
+    }
   }, []);
 
   const leaveSession = useCallback(() => {
@@ -317,6 +331,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         changeHostSlide,
         updateSettings,
         regenerateSessionCode,
+        logout,
         isBlackout,
         toggleBlackout,
         broadcastMessage,

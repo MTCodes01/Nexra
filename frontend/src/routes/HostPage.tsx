@@ -12,7 +12,7 @@ interface Presentation {
 
 export default function HostPage() {
   const navigate = useNavigate();
-  const { hostToken, isAuthLoading } = usePresentationContext();
+  const { hostToken, isAuthLoading, logout } = usePresentationContext();
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -174,8 +174,14 @@ export default function HostPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-white">Presentation Library</h1>
             <p className="text-gray-400 mt-1">Manage your presentations and start sessions.</p>
           </div>
-          <div className="w-full sm:w-auto">
-            <label className="w-full sm:w-auto flex justify-center px-6 py-3 bg-purple-600 rounded-xl text-white font-medium cursor-pointer hover:bg-purple-500 transition-colors shadow-lg">
+          <div className="w-full sm:w-auto flex gap-3">
+            <button
+              onClick={() => logout()}
+              className="flex justify-center px-4 py-3 bg-gray-800 rounded-xl text-white font-medium cursor-pointer hover:bg-gray-700 transition-colors shadow-lg"
+            >
+              Logout
+            </button>
+            <label className="flex-1 sm:flex-none flex justify-center px-6 py-3 bg-purple-600 rounded-xl text-white font-medium cursor-pointer hover:bg-purple-500 transition-colors shadow-lg">
               {uploading ? 'Uploading...' : 'Upload PDF'}
               <input type="file" accept=".pdf" className="hidden" onChange={handleUpload} disabled={uploading} />
             </label>
