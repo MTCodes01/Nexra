@@ -103,7 +103,7 @@ async function main() {
 
   try {
     await app.listen({ port: PORT, host: '0.0.0.0' });
-    console.log(`\n🚀 Seminar server running on http://0.0.0.0:${PORT}`);
+    console.log(`\n🚀 Nexra server running on http://0.0.0.0:${PORT}`);
     console.log(`📡 WebSocket: ws://0.0.0.0:${PORT}/ws`);
   } catch (err) {
     app.log.error(err);

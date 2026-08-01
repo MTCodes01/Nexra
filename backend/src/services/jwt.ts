@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'seminar-fallback-secret';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'seminar-fallback-refresh';
+const JWT_SECRET = process.env.JWT_SECRET || 'nexra-fallback-secret';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'nexra-fallback-refresh';
 
 const ACCESS_EXPIRES_IN = '15m'; // Short-lived access token
 const REFRESH_EXPIRES_IN_DAYS = 7;

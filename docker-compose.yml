@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: seminar-app
+    container_name: nexra-app
     restart: unless-stopped
     ports:
       - "1050:1050"
@@ -23,11 +23,11 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - seminar_network
+      - nexra_network
 
   postgres:
     image: postgres:15-alpine
-    container_name: seminar-postgres
+    container_name: nexra-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -36,7 +36,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - seminar_network
+      - nexra_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -44,7 +44,7 @@ services:
       retries: 5
 
 networks:
-  seminar_network:
+  nexra_network:
     driver: bridge
 
 volumes:

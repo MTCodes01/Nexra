@@ -1,4 +1,4 @@
-# Interactive Seminar Platform 🎤
+# Nexra 🎤
 
 > A production-quality interactive seminar and live presentation platform.
 
@@ -105,14 +105,14 @@ Install `cloudflared` and run:
 cloudflared tunnel --url http://localhost:3000
 ```
 
-Or configure in your Cloudflare dashboard to point `seminar.sreedevss.in` → `localhost:3000`.
+Or configure in your Cloudflare dashboard to point `nexra.sreedevss.in` → `localhost:3000`.
 
 ---
 
 ## Project Structure
 
 ```
-seminar/
+nexra/
 ├── backend/
 │   ├── prisma/schema.prisma        # Database schema
 │   ├── src/
@@ -194,7 +194,7 @@ seminar/
 { "type": "viewerCountChanged", "count": 42 }
 { "type": "blackScreen", "active": true }
 { "type": "reveal" }
-{ "type": "pdfUpdated", "filename": "seminar.pdf" }
+{ "type": "pdfUpdated", "filename": "nexra.pdf" }
 ```
 
 ### Client → Server
