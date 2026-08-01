@@ -17,11 +17,42 @@ export default function PresenterPage() {
     isConnected,
     hostToken,
     changeHostSlide,
-    viewerCount
+    viewerCount,
+    isBlackout,
+    toggleBlackout,
+    sendBroadcast,
+    notes,
+    saveNotes
   } = usePresentationContext();
-  
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showBroadcast, setShowBroadcast] = useState(false);
+  const [broadcastInput, setBroadcastInput] = useState('');
+  const [currentNote, setCurrentNote] = useState('');
+
+  useEffect(() => {
+    setCurrentNote(notes?.[currentSlide] || '');
+  }, [currentSlide, notes]);
+
+  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCurrentNote(e.target.value);
+  };
+
+  const handleNoteBlur = () => {
+    if (notes?.[currentSlide] !== currentNote) {
+      saveNotes({ ...notes, [currentSlide]: currentNote });
+    }
+  };
+
+  const handleBroadcastSubmit = () => {
+    if (broadcastInput.trim()) {
+      sendBroadcast(broadcastInput.trim());
+      setBroadcastInput('');
+      setShowBroadcast(false);
+    }
+  };
 
   useEffect(() => {
     if (!hostToken) {
@@ -104,6 +135,18 @@ export default function PresenterPage() {
             Slide {currentSlide} / {totalSlides}
           </span>
           <button 
+            onClick={() => setShowBroadcast(true)}
+            className="px-4 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 text-sm font-medium transition-colors"
+          >
+            Broadcast
+          </button>
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white border border-gray-700 text-sm font-medium transition-colors"
+          >
+            Settings
+          </button>
+          <button 
             onClick={() => navigate('/host')}
             className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white border border-gray-700 text-sm font-medium transition-colors"
           >
@@ -116,7 +159,7 @@ export default function PresenterPage() {
       <div className="flex-1 relative flex">
         <div className="flex-1 relative">
           <PDFViewer
-            url={`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download`}
+            url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
             token={hostToken}
             currentSlide={currentSlide}
             className="w-full h-full"
@@ -145,8 +188,73 @@ export default function PresenterPage() {
             </div>
             <p className="text-gray-500 text-xs mt-3 text-center">Use Left/Right arrow keys or Spacebar to navigate.</p>
           </div>
+          
+          <button
+            onClick={() => toggleBlackout(!isBlackout)}
+            className={`py-3 rounded-xl flex items-center justify-center font-medium transition-colors border ${isBlackout ? 'bg-red-900/40 text-red-400 border-red-500/50' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
+          >
+            {isBlackout ? 'Resume Presentation' : 'Black Screen'}
+          </button>
+
+          <div className="flex-1 flex flex-col min-h-0">
+            <h2 className="text-white font-bold text-sm mb-2">Slide Notes</h2>
+            <textarea
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-gray-300 resize-none focus:outline-none focus:border-purple-500"
+              placeholder="Add your presenter notes here..."
+              value={currentNote}
+              onChange={handleNoteChange}
+              onBlur={handleNoteBlur}
+            />
+            <p className="text-xs text-gray-500 mt-2 text-right">Auto-saves when you click away</p>
+          </div>
         </div>
       </div>
+
+      {/* Broadcast Modal */}
+      {showBroadcast && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-96 shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Send Broadcast</h3>
+            <textarea
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white mb-4 focus:outline-none focus:border-purple-500"
+              placeholder="Type a message to show to all viewers..."
+              rows={3}
+              value={broadcastInput}
+              onChange={e => setBroadcastInput(e.target.value)}
+            />
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setShowBroadcast(false)}
+                className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBroadcastSubmit}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 font-medium"
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal (Placeholder for now) */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-96 shadow-2xl text-center">
+            <h3 className="text-xl font-bold text-white mb-2">Session Settings</h3>
+            <p className="text-gray-400 mb-6">Settings management coming soon...</p>
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

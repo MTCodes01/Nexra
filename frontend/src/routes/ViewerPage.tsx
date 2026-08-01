@@ -22,6 +22,9 @@ export default function ViewerPage() {
     setIsManualMode,
     syncSlide,
     isConnected,
+    isBlackout,
+    broadcastMessage,
+    clearBroadcast,
   } = usePresentationContext();
   
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +47,16 @@ export default function ViewerPage() {
       leaveSession();
     };
   }, [targetCode, joinSession, navigate, leaveSession]);
+
+  // Clear broadcast message after 5 seconds
+  useEffect(() => {
+    if (broadcastMessage) {
+      const timer = setTimeout(() => {
+        clearBroadcast();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [broadcastMessage, clearBroadcast]);
 
   const handlePrev = useCallback(() => {
     if (currentSlide > 1) syncSlide(currentSlide - 1);
@@ -113,8 +126,21 @@ export default function ViewerPage() {
 
       {/* Main Content */}
       <div className="flex-1 relative">
+        {isBlackout && (
+          <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
+            <h2 className="text-gray-500 text-xl font-light">Eyes up front</h2>
+          </div>
+        )}
+        
+        {broadcastMessage && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-purple-600 text-white px-6 py-3 rounded-xl shadow-2xl animate-bounce">
+            <span className="font-bold mr-2">📢 Host:</span>
+            {broadcastMessage}
+          </div>
+        )}
+
         <PDFViewer
-          url={`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download`}
+          url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
           currentSlide={currentSlide}
           className="w-full h-full"
         />

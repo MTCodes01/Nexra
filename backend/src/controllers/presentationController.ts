@@ -189,3 +189,26 @@ export async function downloadPresentation(request: FastifyRequest, reply: Fasti
 
   return reply.sendFile(presentation.filePath, getStoragePath());
 }
+
+export async function updateNotes(request: FastifyRequest, reply: FastifyReply) {
+  const host = requireHost(request, reply);
+  if (!host) return;
+
+  const { id } = request.params as { id: string };
+  const { notes } = request.body as { notes: Record<number, string> };
+
+  const presentation = await prisma.presentation.findFirst({
+    where: { id, hostId: host.hostId },
+  });
+
+  if (!presentation) {
+    return reply.status(404).send({ error: 'Presentation not found' });
+  }
+
+  const updated = await prisma.presentation.update({
+    where: { id },
+    data: { notes },
+  });
+
+  return reply.send(updated);
+}

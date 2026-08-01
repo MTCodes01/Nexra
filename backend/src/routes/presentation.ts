@@ -5,7 +5,8 @@ import {
   deletePresentation,
   renamePresentation,
   duplicatePresentation,
-  downloadPresentation
+  downloadPresentation,
+  updateNotes
 } from '../controllers/presentationController';
 
 export async function presentationRoutes(fastify: FastifyInstance) {
@@ -14,6 +15,7 @@ export async function presentationRoutes(fastify: FastifyInstance) {
   fastify.delete('/library/:id', deletePresentation);
   fastify.put('/library/:id/rename', renamePresentation);
   fastify.post('/library/:id/duplicate', duplicatePresentation);
+  fastify.put('/library/:id/notes', updateNotes);
   
   // Publicly accessible via ID (for viewers/downloads)
   fastify.get('/:id/download', downloadPresentation);

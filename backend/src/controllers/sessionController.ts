@@ -83,8 +83,10 @@ export async function getSession(request: FastifyRequest, reply: FastifyReply) {
     presentationId: session.presentation.id,
     presentationTitle: session.presentation.title,
     slideCount: session.presentation.slideCount,
+    notes: session.presentation.notes,
     settings: session.settings,
     viewerCount: session.viewerCount,
+    isBlackout: session.isBlackout,
   });
 }
 

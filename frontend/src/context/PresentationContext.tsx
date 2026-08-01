@@ -29,6 +29,15 @@ interface PresentationContextValue {
   hostToken: string | null;
   setHostToken: (token: string | null) => void;
   changeHostSlide: (slide: number) => void;
+  
+  // Presenter features
+  isBlackout: boolean;
+  toggleBlackout: (blackout: boolean) => void;
+  broadcastMessage: string | null;
+  sendBroadcast: (message: string) => void;
+  notes: Record<number, string>;
+  saveNotes: (newNotes: Record<number, string>) => Promise<void>;
+  clearBroadcast: () => void;
 }
 
 const PresentationContext = createContext<PresentationContextValue | null>(null);
@@ -47,6 +56,10 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const [isManualMode, setIsManualMode] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
+
+  const [isBlackout, setIsBlackout] = useState(false);
+  const [broadcastMessage, setBroadcastMessage] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Record<number, string>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -98,6 +111,8 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
       setTotalSlides(data.slideCount || 0);
       setHostSlide(data.currentSlide);
       setCurrentSlide(data.currentSlide);
+      setIsBlackout(data.isBlackout || false);
+      if (data.notes) setNotes(data.notes);
       
       // Connect WebSocket
       const wsUrl = `${import.meta.env.VITE_PUBLIC_URL?.replace(/^http/, 'ws')}/ws`;
@@ -122,6 +137,10 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
             setHostSlide(msg.slide);
           } else if (msg.type === 'viewer_count') {
             setViewerCount(msg.count);
+          } else if (msg.type === 'blackout') {
+            setIsBlackout(msg.isBlackout);
+          } else if (msg.type === 'broadcast') {
+            setBroadcastMessage(msg.message);
           }
         } catch (e) {
           console.error(e);
@@ -152,6 +171,36 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
     setCurrentSlide(slide);
   }, []);
 
+  const toggleBlackout = useCallback((blackout: boolean) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'blackout', isBlackout: blackout }));
+      setIsBlackout(blackout);
+    }
+  }, []);
+
+  const sendBroadcast = useCallback((message: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'broadcast', message }));
+    }
+  }, []);
+
+  const clearBroadcast = useCallback(() => setBroadcastMessage(null), []);
+
+  const saveNotes = useCallback(async (newNotes: Record<number, string>) => {
+    if (!presentationId) return;
+    try {
+      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${presentationId}/notes`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: newNotes })
+      });
+      setNotes(newNotes);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [presentationId]);
+
   return (
     <PresentationContext.Provider
       value={{
@@ -170,7 +219,14 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         leaveSession,
         hostToken,
         setHostToken,
-        changeHostSlide
+        changeHostSlide,
+        isBlackout,
+        toggleBlackout,
+        broadcastMessage,
+        sendBroadcast,
+        notes,
+        saveNotes,
+        clearBroadcast
       }}
     >
       {children}

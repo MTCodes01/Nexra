@@ -38,6 +38,7 @@ model Presentation {
   filePath         String
   thumbnailPath    String?
   slideCount       Int       @default(0)
+  notes            Json?
   uploadTimestamp  DateTime  @default(now())
   updatedTimestamp DateTime  @updatedAt
 
@@ -55,6 +56,7 @@ model Session {
   endedTime      DateTime?
   viewerCount    Int       @default(0)
   isActive       Boolean   @default(true)
+  isBlackout     Boolean   @default(false)
 
   host              Host               @relation(fields: [hostId], references: [id], onDelete: Cascade)
   presentation      Presentation       @relation(fields: [presentationId], references: [id], onDelete: Cascade)
