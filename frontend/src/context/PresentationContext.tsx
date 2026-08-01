@@ -126,9 +126,9 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
       
       // Connect WebSocket
       const baseUrl = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const wsUrl = `${baseUrl.replace(/^https?/, wsProtocol)}/ws`;
-      const ws = new WebSocket(wsUrl);
+      const wsUrlObj = new URL('/ws', baseUrl);
+      wsUrlObj.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(wsUrlObj.toString());
       wsRef.current = ws;
       
       ws.onopen = () => {

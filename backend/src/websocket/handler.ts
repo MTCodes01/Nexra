@@ -39,7 +39,7 @@ export function setupWebSocket(server: Server) {
           if (msg.role === 'host') {
             // Validate host auth via cookie
             const cookieHeader = request.headers.cookie || '';
-            const cookies = require('cookie').parse(cookieHeader);
+            const cookies = require('cookie').parseCookie(cookieHeader);
             const token = cookies.accessToken;
             
             if (!token) {
