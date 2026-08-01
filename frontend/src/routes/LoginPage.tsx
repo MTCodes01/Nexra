@@ -69,11 +69,11 @@ export default function LoginPage() {
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
 
           <div className="flex flex-col items-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center shadow-lg shadow-purple-900/50 mb-4">
-              <span className="text-3xl">🎤</span>
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center shadow-lg shadow-purple-900/50 mb-4 p-3">
+              <img src="/favicon.svg" alt="Nexra Logo" className="w-full h-full object-contain drop-shadow-md" />
             </div>
             <h1 className="text-2xl font-bold text-white">
-              {mode === 'viewer' ? 'Join Presentation' : 'Host Portal'}
+              {mode === 'viewer' ? 'Join Nexra Session' : 'Nexra Host Portal'}
             </h1>
             <p className="text-gray-400 text-sm mt-1">
               {mode === 'viewer' 

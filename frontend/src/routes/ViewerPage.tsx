@@ -119,9 +119,9 @@ export default function ViewerPage() {
         <div className="absolute top-0 left-0 right-0 min-h-[3.5rem] py-2 border-b border-gray-800 bg-gray-900/80 backdrop-blur-md px-4 flex flex-wrap items-center justify-between gap-3 transform transition-transform duration-300 -translate-y-full group-hover:translate-y-0 focus-within:translate-y-0 shadow-xl">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center text-sm shadow-lg shadow-purple-900/20 shrink-0">
-              🎤
+              <img src="/favicon.svg" alt="Nexra Logo" className="w-5 h-5 object-contain" />
             </div>
-            <span className="text-sm font-semibold text-white">Live Session</span>
+            <span className="text-sm font-semibold text-white">Nexra Session</span>
             {!isConnected && (
               <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30 ml-2">Reconnecting...</span>
             )}

@@ -171,7 +171,12 @@ export default function HostPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">Presentation Library</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center p-2 shadow-lg shadow-purple-900/50">
+                <img src="/favicon.svg" alt="Nexra Logo" className="w-full h-full object-contain drop-shadow-md" />
+              </div>
+              Nexra Library
+            </h1>
             <p className="text-gray-400 mt-1">Manage your presentations and start sessions.</p>
           </div>
           <div className="w-full sm:w-auto flex gap-3">
