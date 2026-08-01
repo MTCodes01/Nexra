@@ -6,22 +6,33 @@ import { usePresentationContext } from '../context/PresentationContext';
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setHostToken } = usePresentationContext();
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<'viewer' | 'host_login' | 'host_register'>('viewer');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [roomCode, setRoomCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    
+    if (mode === 'viewer') {
+      if (!roomCode.trim()) {
+        setError('Please enter a room code');
+        return;
+      }
+      navigate(`/p/${roomCode.trim().toUpperCase()}`);
+      return;
+    }
+
     if (!username.trim() || !password) {
       setError('Please fill in all fields');
       return;
     }
-    setError(null);
     setIsLoading(true);
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const endpoint = mode === 'host_login' ? '/api/auth/login' : '/api/auth/register';
       const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}${endpoint}`, {
         method: 'POST',
         credentials: 'include',
@@ -61,36 +72,62 @@ export default function LoginPage() {
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center shadow-lg shadow-purple-900/50 mb-4">
               <span className="text-3xl">🎤</span>
             </div>
-            <h1 className="text-2xl font-bold text-white">Host Portal</h1>
-            <p className="text-gray-400 text-sm mt-1">{isLogin ? 'Sign in to present' : 'Create an account to present'}</p>
+            <h1 className="text-2xl font-bold text-white">
+              {mode === 'viewer' ? 'Join Presentation' : 'Host Portal'}
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {mode === 'viewer' 
+                ? 'Enter a session code to join' 
+                : mode === 'host_login' 
+                  ? 'Sign in to present' 
+                  : 'Create an account to present'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-                className="w-full px-4 py-3.5 rounded-xl bg-gray-800/60 border border-gray-700/50 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all text-sm"
-              />
-            </div>
+            {mode === 'viewer' ? (
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  Session Code
+                </label>
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. AB123C"
+                  maxLength={6}
+                  className="w-full px-4 py-3.5 rounded-xl bg-gray-800/60 border border-gray-700/50 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all text-sm font-mono text-center tracking-[0.25em]"
+                />
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter username"
+                    className="w-full px-4 py-3.5 rounded-xl bg-gray-800/60 border border-gray-700/50 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all text-sm"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full px-4 py-3.5 rounded-xl bg-gray-800/60 border border-gray-700/50 text-white focus:outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all text-sm"
-              />
-            </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="w-full px-4 py-3.5 rounded-xl bg-gray-800/60 border border-gray-700/50 text-white focus:outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all text-sm"
+                  />
+                </div>
+              </>
+            )}
 
             {error && (
               <motion.div
@@ -107,17 +144,40 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 disabled:from-gray-700 disabled:to-gray-800 text-white font-semibold text-sm transition-all shadow-lg active:scale-[0.98] mt-2"
             >
-              {isLoading ? 'Processing…' : isLogin ? 'Sign In →' : 'Create Account →'}
+              {isLoading 
+                ? 'Processing…' 
+                : mode === 'viewer' 
+                  ? 'Join Session →'
+                  : mode === 'host_login' 
+                    ? 'Sign In →' 
+                    : 'Create Account →'}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-xs text-gray-400 hover:text-white transition-colors"
-            >
-              {isLogin ? "Don't have an account? Register" : "Already have an account? Sign in"}
-            </button>
+          <div className="mt-6 flex flex-col gap-2 text-center text-xs">
+            {mode === 'viewer' ? (
+              <button
+                onClick={() => { setMode('host_login'); setError(null); }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Host a presentation? Sign in here
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => { setMode(mode === 'host_login' ? 'host_register' : 'host_login'); setError(null); }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  {mode === 'host_login' ? "Don't have an account? Register" : "Already have an account? Sign in"}
+                </button>
+                <button
+                  onClick={() => { setMode('viewer'); setError(null); }}
+                  className="text-gray-500 hover:text-gray-300 transition-colors mt-2"
+                >
+                  Have a code?
+                </button>
+              </>
+            )}
           </div>
         </div>
       </motion.div>

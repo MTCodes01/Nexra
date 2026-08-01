@@ -216,12 +216,21 @@ export default function HostPage() {
                 )}
                 
                 <div className="flex flex-wrap gap-2">
-                  <button 
-                    onClick={() => handleStartSession(p.id)}
-                    className="w-full px-3 py-2 bg-purple-600/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-600/30 transition-colors mb-2"
-                  >
-                    Start Session
-                  </button>
+                  {p.sessions && p.sessions.length > 0 ? (
+                    <button 
+                      onClick={() => window.open(`/present/${p.sessions![0].sessionCode}`, '_blank')}
+                      className="w-full px-3 py-2 bg-green-600/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-600/30 transition-colors mb-2 border border-green-500/20"
+                    >
+                      Resume Session
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handleStartSession(p.id)}
+                      className="w-full px-3 py-2 bg-purple-600/20 text-purple-400 rounded-lg text-sm font-medium hover:bg-purple-600/30 transition-colors mb-2 border border-transparent"
+                    >
+                      Start Session
+                    </button>
+                  )}
                   <button 
                     onClick={() => handleRename(p.id, p.title)}
                     className="flex-1 px-3 py-2 bg-gray-800 text-gray-400 rounded-lg text-sm hover:text-white transition-colors"
