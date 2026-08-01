@@ -62,6 +62,8 @@ async function bootstrap() {
       reply.status(429).send({ error: 'Rate limit exceeded, retry in 1 minute' });
     } else if (err.validation) {
       reply.status(400).send({ error: 'Validation error' });
+    } else if (err.statusCode && err.statusCode < 500) {
+      reply.status(err.statusCode).send({ error: err.message });
     } else {
       reply.status(500).send({ error: 'Internal Server Error' });
     }
@@ -72,12 +74,11 @@ async function bootstrap() {
       await fastify.register(staticFiles, {
         root: frontendDist,
         prefix: '/',
-        decorateReply: false,
       });
 
       fastify.setNotFoundHandler(async (request, reply) => {
         if (!request.url.startsWith('/api') && !request.url.startsWith('/ws')) {
-          return reply.sendFile('index.html', frontendDist);
+          return reply.sendFile('index.html');
         }
         return reply.status(404).send({ error: 'Not found' });
       });
