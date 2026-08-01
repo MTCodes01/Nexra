@@ -85,6 +85,12 @@ export async function listPresentations(request: FastifyRequest, reply: FastifyR
 
   const presentations = await prisma.presentation.findMany({
     where: { hostId: host.hostId },
+    include: {
+      sessions: {
+        where: { isActive: true },
+        select: { sessionCode: true }
+      }
+    },
     orderBy: { updatedTimestamp: 'desc' },
   });
 

@@ -7,6 +7,7 @@ interface Presentation {
   title: string;
   slideCount: number;
   uploadTimestamp: string;
+  sessions?: { sessionCode: string }[];
 }
 
 export default function HostPage() {
@@ -195,7 +196,24 @@ export default function HostPage() {
                   <div className="w-12 h-12 rounded-xl bg-purple-900/30 text-purple-400 flex items-center justify-center text-xl">📄</div>
                 </div>
                 <h3 className="text-lg font-bold text-white mb-1 truncate">{p.title}</h3>
-                <p className="text-sm text-gray-500 mb-6">Uploaded: {new Date(p.uploadTimestamp).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-500 mb-4">Uploaded: {new Date(p.uploadTimestamp).toLocaleDateString()}</p>
+                
+                {p.sessions && p.sessions.length > 0 && (
+                  <div className="mb-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+                    <div className="text-xs font-semibold text-purple-400 mb-1 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"></span>
+                      Active Session
+                    </div>
+                    <a 
+                      href={`/p/${p.sessions[0].sessionCode}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-xs text-gray-300 break-all bg-black/40 p-2 rounded border border-gray-800 hover:border-purple-500/50 hover:text-white transition-colors block"
+                    >
+                      {`${window.location.origin}/p/${p.sessions[0].sessionCode}`}
+                    </a>
+                  </div>
+                )}
                 
                 <div className="flex flex-wrap gap-2">
                   <button 
