@@ -137,14 +137,14 @@ export default function HostPage() {
     // Basic active session view
     return (
       <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-        <h1 className="text-3xl font-bold text-white mb-4">Session Active!</h1>
-        <div className="bg-gray-900 p-8 rounded-2xl border border-purple-500 shadow-2xl text-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-4 text-center">Session Active!</h1>
+        <div className="bg-gray-900 p-6 md:p-8 rounded-2xl border border-purple-500 shadow-2xl text-center w-full max-w-lg">
           <p className="text-gray-400 mb-2">Share this link with your audience:</p>
-          <div className="text-4xl font-mono text-purple-400 font-bold mb-6 tracking-widest">{activeSessionCode}</div>
-          <div className="bg-gray-800 px-4 py-3 rounded-lg mb-6 break-all font-mono text-sm text-gray-300">
+          <div className="text-3xl md:text-4xl font-mono text-purple-400 font-bold mb-6 tracking-widest">{activeSessionCode}</div>
+          <div className="bg-gray-800 px-4 py-3 rounded-lg mb-6 break-all font-mono text-xs md:text-sm text-gray-300">
             {`${window.location.origin}/p/${activeSessionCode}`}
           </div>
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <button 
               onClick={() => {
                 window.open(`/present/${activeSessionCode}`, '_blank');
@@ -166,15 +166,15 @@ export default function HostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-8">
+    <div className="min-h-screen bg-gray-950 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Presentation Library</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-white">Presentation Library</h1>
             <p className="text-gray-400 mt-1">Manage your presentations and start sessions.</p>
           </div>
-          <div>
-            <label className="px-6 py-3 bg-purple-600 rounded-xl text-white font-medium cursor-pointer hover:bg-purple-500 transition-colors shadow-lg">
+          <div className="w-full sm:w-auto">
+            <label className="w-full sm:w-auto flex justify-center px-6 py-3 bg-purple-600 rounded-xl text-white font-medium cursor-pointer hover:bg-purple-500 transition-colors shadow-lg">
               {uploading ? 'Uploading...' : 'Upload PDF'}
               <input type="file" accept=".pdf" className="hidden" onChange={handleUpload} disabled={uploading} />
             </label>

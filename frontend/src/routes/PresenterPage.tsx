@@ -121,16 +121,16 @@ export default function PresenterPage() {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-950 overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gray-950 flex flex-col h-screen">
       {/* Top Bar */}
-      <div className="flex-shrink-0 h-14 border-b border-purple-900 bg-gray-900/80 backdrop-blur-md px-4 flex items-center justify-between z-10 relative shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-        <div className="flex items-center gap-3">
+      <div className="h-auto md:h-16 border-b border-gray-800 bg-gray-900 px-4 md:px-6 flex flex-col md:flex-row items-center justify-between shrink-0 gap-4 py-4 md:py-0">
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center text-sm shadow-lg shadow-purple-900/20">
             👑
           </div>
           <span className="text-sm font-semibold text-white">Presenter View</span>
           {!isConnected && (
-            <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30 ml-2">Reconnecting...</span>
+            <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30">Reconnecting...</span>
           )}
         </div>
 
@@ -142,21 +142,24 @@ export default function PresenterPage() {
           <span className="text-sm font-medium text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
             Slide {currentSlide} / {totalSlides}
           </span>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 justify-center w-full md:w-auto">
           <button 
             onClick={() => setShowBroadcast(true)}
-            className="px-4 py-1.5 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30 text-sm font-medium transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 text-sm font-medium transition-colors border border-purple-500/20 flex-1 md:flex-none"
           >
             Broadcast
           </button>
           <button 
             onClick={() => setShowSettings(true)}
-            className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white border border-gray-700 text-sm font-medium transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white border border-gray-700 text-sm font-medium transition-colors flex-1 md:flex-none"
           >
             Settings
           </button>
           <button 
             onClick={() => navigate('/host')}
-            className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white border border-gray-700 text-sm font-medium transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 hover:text-white border border-gray-700 text-sm font-medium transition-colors flex-1 md:flex-none"
           >
             Exit to Dashboard
           </button>
@@ -164,8 +167,8 @@ export default function PresenterPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 relative flex">
-        <div className="flex-1 relative">
+      <div className="flex-1 relative flex flex-col md:flex-row min-h-0 overflow-hidden">
+        <div className="flex-1 relative min-h-0 min-w-0 bg-black">
           <PDFViewer
             url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
             token={hostToken}
@@ -176,7 +179,7 @@ export default function PresenterPage() {
         </div>
 
         {/* Presenter Sidebar Controls */}
-        <div className="w-80 bg-gray-900 border-l border-gray-800 p-6 flex flex-col gap-6">
+        <div className="w-full md:w-80 h-auto md:h-full bg-gray-900 border-t md:border-t-0 md:border-l border-gray-800 p-4 md:p-6 flex flex-col gap-4 md:gap-6 shrink-0 overflow-y-auto">
           <div>
             <h2 className="text-white font-bold text-lg mb-2">Controls</h2>
             <div className="flex gap-2">
@@ -205,7 +208,7 @@ export default function PresenterPage() {
             {isBlackout ? 'Resume Presentation' : 'Black Screen'}
           </button>
 
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 min-h-[150px] md:min-h-0">
             <h2 className="text-white font-bold text-sm mb-2">Slide Notes</h2>
             <textarea
               className="flex-1 bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-gray-300 resize-none focus:outline-none focus:border-purple-500"

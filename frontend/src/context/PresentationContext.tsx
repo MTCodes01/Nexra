@@ -67,22 +67,36 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/me`, { credentials: 'include' })
-      .then(res => {
-        if (res.ok) {
-          return res.json();
+    const checkAuth = async () => {
+      try {
+        let res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/me`, { credentials: 'include' });
+        
+        // If expired, try refresh
+        if (res.status === 401) {
+          const refreshRes = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include'
+          });
+          if (refreshRes.ok) {
+            // Retry /me
+            res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/me`, { credentials: 'include' });
+          }
         }
-        throw new Error('Not auth');
-      })
-      .then(data => {
-        setHostToken(data.hostId);
-      })
-      .catch(() => {
+        
+        if (res.ok) {
+          const data = await res.json();
+          setHostToken(data.hostId);
+        } else {
+          setHostToken(null);
+        }
+      } catch (e) {
         setHostToken(null);
-      })
-      .finally(() => {
+      } finally {
         setIsAuthLoading(false);
-      });
+      }
+    };
+    
+    checkAuth();
   }, []);
 
   const leaveSession = useCallback(() => {

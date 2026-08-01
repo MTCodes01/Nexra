@@ -30,6 +30,27 @@ export default function ViewerPage() {
   
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(err => console.error(err));
+      }
+    }
+  };
 
   useEffect(() => {
     if (!targetCode) {
@@ -92,11 +113,11 @@ export default function ViewerPage() {
   return (
     <div className="fixed inset-0 bg-gray-950 overflow-hidden flex flex-col">
       {/* Top Bar Hover Trigger */}
-      <div className="absolute top-0 left-0 right-0 z-50 h-4 group">
+      <div className="absolute top-0 left-0 right-0 z-50 h-6 group">
         {/* Top Bar Content */}
-        <div className="absolute top-0 left-0 right-0 h-14 border-b border-gray-800 bg-gray-900/80 backdrop-blur-md px-4 flex items-center justify-between transform transition-transform duration-300 -translate-y-full group-hover:translate-y-0 focus-within:translate-y-0">
+        <div className="absolute top-0 left-0 right-0 min-h-[3.5rem] py-2 border-b border-gray-800 bg-gray-900/80 backdrop-blur-md px-4 flex flex-wrap items-center justify-between gap-3 transform transition-transform duration-300 -translate-y-full group-hover:translate-y-0 focus-within:translate-y-0 shadow-xl">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center text-sm shadow-lg shadow-purple-900/20">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center text-sm shadow-lg shadow-purple-900/20 shrink-0">
               🎤
             </div>
             <span className="text-sm font-semibold text-white">Live Session</span>
@@ -105,31 +126,37 @@ export default function ViewerPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
               Slide {currentSlide} / {totalSlides}
             </span>
             {isManualMode ? (
               <button 
                 onClick={() => setIsManualMode(false)}
-                className="px-4 py-1.5 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
+                className="px-3 md:px-4 py-1.5 rounded-lg bg-purple-600 text-white text-xs md:text-sm font-medium hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
               >
                 Follow Presenter
               </button>
             ) : (
               <button 
                 onClick={() => setIsManualMode(true)}
-                className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 text-sm font-medium hover:bg-gray-700 transition-colors"
+                className="px-3 md:px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 text-xs md:text-sm font-medium hover:bg-gray-700 transition-colors"
               >
                 Read at my own pace
               </button>
             )}
+            <button
+              onClick={toggleFullscreen}
+              className="px-3 md:px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 text-xs md:text-sm font-medium hover:bg-gray-700 transition-colors flex items-center gap-1"
+            >
+              {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0 min-w-0">
         {isBlackout && (
           <div className="absolute inset-0 z-50 bg-black flex items-center justify-center">
             <h2 className="text-gray-500 text-xl font-light">Eyes up front</h2>
