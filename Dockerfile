@@ -39,7 +39,7 @@ EXPOSE 1050
 # Setup a startup script
 RUN echo '#!/bin/sh' > /app/backend/start.sh && \
     echo 'set -e' >> /app/backend/start.sh && \
-    echo 'npx prisma migrate deploy' >> /app/backend/start.sh && \
+    echo 'npx prisma db push --accept-data-loss' >> /app/backend/start.sh && \
     echo 'node dist/server.js' >> /app/backend/start.sh && \
     chmod +x /app/backend/start.sh
 
