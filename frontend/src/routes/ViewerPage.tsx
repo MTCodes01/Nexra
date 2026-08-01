@@ -211,18 +211,6 @@ export default function ViewerPage() {
             </button>
           </div>
         )}
-
-        {/* Download Button on Final Slide */}
-        {isLastSlide && (
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2">
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold shadow-xl shadow-green-900/40 hover:scale-105 transition-transform"
-            >
-              <span>📥</span> Download Presentation
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
