@@ -128,9 +128,7 @@ export default function PresenterPage() {
       {/* Top Bar */}
       <div className="h-auto md:h-16 border-b border-gray-800 bg-gray-900 px-4 md:px-6 flex flex-col md:flex-row items-center justify-between shrink-0 gap-4 py-4 md:py-0">
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center text-sm shadow-lg shadow-purple-900/20">
-            👑
-          </div>
+          <img src="/favicon.svg" alt="Nexra Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] shrink-0" />
           <span className="text-sm font-semibold text-white">Presenter View</span>
           {!isConnected && (
             <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30">Reconnecting...</span>
