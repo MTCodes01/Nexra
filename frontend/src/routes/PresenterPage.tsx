@@ -24,7 +24,10 @@ export default function PresenterPage() {
     sendBroadcast,
     notes,
     saveNotes,
-    setTotalSlides
+    setTotalSlides,
+    settings,
+    updateSettings,
+    regenerateSessionCode
   } = usePresentationContext();
 
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +177,7 @@ export default function PresenterPage() {
             token={hostToken}
             currentSlide={currentSlide}
             onTotalPagesLoaded={setTotalSlides}
+            qualityMultiplier={settings?.defaultZoom ? settings.defaultZoom / 100 : 1}
             className="w-full h-full"
           />
         </div>
@@ -252,18 +256,87 @@ export default function PresenterPage() {
         </div>
       )}
 
-      {/* Settings Modal (Placeholder for now) */}
+      {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-96 shadow-2xl text-center">
-            <h3 className="text-xl font-bold text-white mb-2">Session Settings</h3>
-            <p className="text-gray-400 mb-6">Settings management coming soon...</p>
-            <button 
-              onClick={() => setShowSettings(false)}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 font-medium"
-            >
-              Close
-            </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-6">Session Settings</h3>
+            
+            <div className="space-y-6">
+              {/* Allow Manual Reading */}
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <div className="text-white font-medium">Read at own pace</div>
+                  <div className="text-xs text-gray-400 mt-1">Allow viewers to navigate slides independently</div>
+                </div>
+                <div className="relative inline-block w-12 h-6 rounded-full bg-gray-700">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={settings?.allowManualReading ?? true}
+                    onChange={(e) => updateSettings({ allowManualReading: e.target.checked })}
+                  />
+                  <div className="w-12 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </div>
+              </label>
+
+              {/* Allow Download */}
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <div className="text-white font-medium">Allow PDF Download</div>
+                  <div className="text-xs text-gray-400 mt-1">Let viewers download the presentation</div>
+                </div>
+                <div className="relative inline-block w-12 h-6 rounded-full bg-gray-700">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={settings?.enableDownload ?? false}
+                    onChange={(e) => updateSettings({ enableDownload: e.target.checked })}
+                  />
+                  <div className="w-12 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </div>
+              </label>
+
+              {/* Slide Quality */}
+              <div>
+                <label className="text-white font-medium mb-2 block">Slide Render Quality</label>
+                <div className="text-xs text-gray-400 mb-3">Higher quality is sharper but uses more memory</div>
+                <div className="flex gap-2">
+                  {[100, 200, 300].map(zoom => (
+                    <button
+                      key={zoom}
+                      onClick={() => updateSettings({ defaultZoom: zoom })}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${settings?.defaultZoom === zoom ? 'bg-purple-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'}`}
+                    >
+                      {zoom / 100}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Regenerate Code */}
+              <div className="pt-4 border-t border-gray-800">
+                <button
+                  onClick={() => {
+                    if (confirm('This will change the session link and redirect all connected viewers. Continue?')) {
+                      regenerateSessionCode();
+                    }
+                  }}
+                  className="w-full py-2.5 rounded-lg bg-red-900/20 text-red-400 hover:bg-red-900/40 text-sm font-medium transition-colors border border-red-500/20"
+                >
+                  Regenerate Session Code
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-8 text-right">
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 font-medium transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

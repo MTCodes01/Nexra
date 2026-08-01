@@ -85,6 +85,23 @@ export function setupWebSocket(server: Server) {
           });
           broadcastToRoom(ws.sessionCode, { type: 'blackout', isBlackout: msg.isBlackout });
         }
+        else if (msg.type === 'settings_updated' && ws.role === 'host') {
+          broadcastToRoom(ws.sessionCode, { type: 'settings_updated', settings: msg.settings });
+        }
+        else if (msg.type === 'session_code_changed' && ws.role === 'host') {
+          broadcastToRoom(ws.sessionCode, { type: 'session_code_changed', newCode: msg.newCode });
+          
+          // Re-map the host to the new room, since the code changed
+          const oldRoom = rooms.get(ws.sessionCode);
+          if (oldRoom) {
+            oldRoom.delete(ws);
+          }
+          ws.sessionCode = msg.newCode;
+          if (!rooms.has(ws.sessionCode)) {
+            rooms.set(ws.sessionCode, new Set());
+          }
+          rooms.get(ws.sessionCode)!.add(ws);
+        }
       } catch (err) {
         console.error('WS Error:', err);
       }

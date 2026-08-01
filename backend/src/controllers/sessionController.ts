@@ -94,11 +94,11 @@ export async function updateSessionSettings(request: FastifyRequest, reply: Fast
   const host = requireHost(request, reply);
   if (!host) return;
 
-  const { id } = request.params as { id: string };
+  const { code } = request.params as { code: string };
   const data = request.body as any;
 
   const session = await prisma.session.findFirst({
-    where: { id, hostId: host.hostId },
+    where: { sessionCode: code, hostId: host.hostId },
   });
 
   if (!session) {
@@ -111,4 +111,31 @@ export async function updateSessionSettings(request: FastifyRequest, reply: Fast
   });
 
   return reply.send(settings);
+}
+
+export async function regenerateCode(request: FastifyRequest, reply: FastifyReply) {
+  const host = requireHost(request, reply);
+  if (!host) return;
+
+  const { code } = request.params as { code: string };
+
+  const session = await prisma.session.findFirst({
+    where: { sessionCode: code, hostId: host.hostId },
+  });
+
+  if (!session) {
+    return reply.status(404).send({ error: 'Session not found' });
+  }
+
+  let sessionCode = generateSessionCode();
+  while (await prisma.session.findUnique({ where: { sessionCode } })) {
+    sessionCode = generateSessionCode();
+  }
+
+  const updatedSession = await prisma.session.update({
+    where: { id: session.id },
+    data: { sessionCode },
+  });
+
+  return reply.send({ sessionCode: updatedSession.sessionCode });
 }

@@ -7,6 +7,7 @@ interface PDFViewerProps {
   currentSlide: number;
   onTotalPagesLoaded?: (n: number) => void;
   className?: string;
+  qualityMultiplier?: number;
 }
 
 const PDFViewer = memo(function PDFViewer({
@@ -15,6 +16,7 @@ const PDFViewer = memo(function PDFViewer({
   currentSlide,
   onTotalPagesLoaded,
   className = '',
+  qualityMultiplier = 1,
 }: PDFViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,7 +70,7 @@ const PDFViewer = memo(function PDFViewer({
       }
     }
 
-    renderPage(currentSlide, canvas, containerWidth, containerHeight).then((success) => {
+    renderPage(currentSlide, canvas, containerWidth * qualityMultiplier, containerHeight * qualityMultiplier).then((success) => {
       // If render failed, was cancelled, or if canvas unmounted/changed during render, do not cache
       if (!success || canvas !== canvasRef.current) return;
 

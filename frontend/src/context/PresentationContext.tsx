@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
 
+export interface SessionSettings {
+  allowManualReading: boolean;
+  enableDownload: boolean;
+  defaultZoom: number; // Used for slideQuality (100 = 1x, 200 = 2x, 300 = 3x)
+}
+
 interface PresentationContextValue {
   // Session details
   sessionCode: string | null;
@@ -12,6 +18,7 @@ interface PresentationContextValue {
   totalSlides: number;
   setTotalSlides: (total: number) => void;
   viewerCount: number;
+  settings: SessionSettings | null;
   
   // Modes
   isManualMode: boolean;
@@ -31,6 +38,8 @@ interface PresentationContextValue {
   setHostToken: (token: string | null) => void;
   isAuthLoading: boolean;
   changeHostSlide: (slide: number) => void;
+  updateSettings: (newSettings: Partial<SessionSettings>) => Promise<void>;
+  regenerateSessionCode: () => Promise<void>;
   
   // Presenter features
   isBlackout: boolean;
@@ -55,6 +64,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const [hostSlide, setHostSlide] = useState(1);
   const [totalSlides, setTotalSlides] = useState(0);
   const [viewerCount, setViewerCount] = useState(0);
+  const [settings, setSettings] = useState<SessionSettings | null>(null);
   
   const [isManualMode, setIsManualMode] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -136,6 +146,11 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
       setHostSlide(data.currentSlide);
       setCurrentSlide(data.currentSlide);
       setIsBlackout(data.isBlackout || false);
+      setViewerCount(data.viewerCount || 0);
+      setSettings(data.settings || null);
+      if (data.settings && !data.settings.allowManualReading) {
+        setIsManualMode(false);
+      }
       if (data.notes) setNotes(data.notes);
       
       // Connect WebSocket
@@ -165,6 +180,17 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
             setViewerCount(msg.count);
           } else if (msg.type === 'blackout') {
             setIsBlackout(msg.isBlackout);
+          } else if (msg.type === 'settings_updated') {
+            setSettings(msg.settings);
+            if (!msg.settings.allowManualReading) {
+              setIsManualMode(false);
+            }
+          } else if (msg.type === 'session_code_changed') {
+            if (role === 'host') {
+              window.location.replace(`/present/${msg.newCode}`);
+            } else {
+              window.location.replace(`/p/${msg.newCode}`);
+            }
           } else if (msg.type === 'broadcast') {
             setBroadcastMessage(msg.message);
           }
@@ -204,6 +230,46 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
+  const updateSettings = useCallback(async (newSettings: Partial<SessionSettings>) => {
+    if (!sessionCode) return;
+    try {
+      const merged = { ...settings, ...newSettings } as SessionSettings;
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${sessionCode}/settings`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      });
+      if (res.ok) {
+        setSettings(merged);
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: 'settings_updated', settings: merged }));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [sessionCode, settings]);
+
+  const regenerateSessionCode = useCallback(async () => {
+    if (!sessionCode) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${sessionCode}/regenerate-code`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: 'session_code_changed', newCode: data.sessionCode }));
+        }
+        window.location.replace(`/present/${data.sessionCode}`);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [sessionCode]);
+
   const sendBroadcast = useCallback((message: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'broadcast', message }));
@@ -237,6 +303,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         totalSlides,
         setTotalSlides,
         viewerCount,
+        settings,
         isManualMode,
         setIsManualMode,
         syncSlide,
@@ -248,6 +315,8 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         setHostToken,
         isAuthLoading,
         changeHostSlide,
+        updateSettings,
+        regenerateSessionCode,
         isBlackout,
         toggleBlackout,
         broadcastMessage,

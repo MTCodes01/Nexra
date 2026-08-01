@@ -26,6 +26,7 @@ export default function ViewerPage() {
     broadcastMessage,
     clearBroadcast,
     setTotalSlides,
+    settings,
   } = usePresentationContext();
   
   const [error, setError] = useState<string | null>(null);
@@ -130,19 +131,29 @@ export default function ViewerPage() {
             <span className="text-sm font-medium text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
               Slide {currentSlide} / {totalSlides}
             </span>
-            {isManualMode ? (
-              <button 
-                onClick={() => setIsManualMode(false)}
-                className="px-3 md:px-4 py-1.5 rounded-lg bg-purple-600 text-white text-xs md:text-sm font-medium hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
-              >
-                Follow Presenter
-              </button>
-            ) : (
-              <button 
-                onClick={() => setIsManualMode(true)}
+            {settings?.allowManualReading !== false && (
+              isManualMode ? (
+                <button 
+                  onClick={() => setIsManualMode(false)}
+                  className="px-3 md:px-4 py-1.5 rounded-lg bg-purple-600 text-white text-xs md:text-sm font-medium hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
+                >
+                  Follow Presenter
+                </button>
+              ) : (
+                <button 
+                  onClick={() => setIsManualMode(true)}
+                  className="px-3 md:px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 text-xs md:text-sm font-medium hover:bg-gray-700 transition-colors"
+                >
+                  Read at my own pace
+                </button>
+              )
+            )}
+            {settings?.enableDownload && (
+              <button
+                onClick={handleDownload}
                 className="px-3 md:px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 text-xs md:text-sm font-medium hover:bg-gray-700 transition-colors"
               >
-                Read at my own pace
+                Download PDF
               </button>
             )}
             <button
@@ -174,6 +185,7 @@ export default function ViewerPage() {
           url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
           currentSlide={currentSlide}
           onTotalPagesLoaded={setTotalSlides}
+          qualityMultiplier={settings?.defaultZoom ? settings.defaultZoom / 100 : 1}
           className="w-full h-full"
         />
 
