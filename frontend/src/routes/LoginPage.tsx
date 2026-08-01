@@ -22,7 +22,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const res = await fetch(`http://localhost:1050${endpoint}`, {
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}${endpoint}`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

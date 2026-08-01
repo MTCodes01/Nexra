@@ -55,7 +55,7 @@ export default function ViewerPage() {
 
   const handleDownload = () => {
     if (presentationId) {
-      window.open(`http://localhost:1050/api/presentation/${presentationId}/download`, '_blank');
+      window.open(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download`, '_blank');
     }
   };
 
@@ -114,7 +114,7 @@ export default function ViewerPage() {
       {/* Main Content */}
       <div className="flex-1 relative">
         <PDFViewer
-          url={`http://localhost:1050/api/presentation/${presentationId}/download`}
+          url={`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download`}
           currentSlide={currentSlide}
           className="w-full h-full"
         />

@@ -51,7 +51,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:1050/api/auth/me', { credentials: 'include' })
+    fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/me`, { credentials: 'include' })
       .then(res => {
         if (res.ok) {
           return res.json();
@@ -86,7 +86,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
 
   const joinSession = useCallback(async (code: string, role: 'viewer' | 'host' = 'viewer') => {
     try {
-      const res = await fetch(`http://localhost:1050/api/session/${code}`, {
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${code}`, {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Session not found');
@@ -100,7 +100,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
       setCurrentSlide(data.currentSlide);
       
       // Connect WebSocket
-      const wsUrl = 'ws://localhost:1050/ws';
+      const wsUrl = `${import.meta.env.VITE_PUBLIC_URL?.replace(/^http/, 'ws')}/ws`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       

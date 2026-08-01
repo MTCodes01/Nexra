@@ -27,7 +27,7 @@ export default function HostPage() {
 
   const loadLibrary = async () => {
     try {
-      const res = await fetch('http://localhost:1050/api/presentation/library', {
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library`, {
         credentials: 'include'
       });
       if (res.ok) {
@@ -50,7 +50,7 @@ export default function HostPage() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('http://localhost:1050/api/presentation/library/upload', {
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/upload`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -67,7 +67,7 @@ export default function HostPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`http://localhost:1050/api/presentation/library/${id}`, {
+      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -79,7 +79,7 @@ export default function HostPage() {
 
   const handleDuplicate = async (id: string) => {
     try {
-      await fetch(`http://localhost:1050/api/presentation/library/${id}/duplicate`, {
+      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${id}/duplicate`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -93,7 +93,7 @@ export default function HostPage() {
     const newTitle = prompt('Enter new title:', currentTitle);
     if (!newTitle || newTitle === currentTitle) return;
     try {
-      await fetch(`http://localhost:1050/api/presentation/library/${id}/rename`, {
+      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${id}/rename`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 
@@ -109,7 +109,7 @@ export default function HostPage() {
 
   const handleStartSession = async (id: string) => {
     try {
-      const res = await fetch('http://localhost:1050/api/session', {
+      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session`, {
         method: 'POST',
         credentials: 'include',
         headers: { 
@@ -137,7 +137,7 @@ export default function HostPage() {
           <p className="text-gray-400 mb-2">Share this link with your audience:</p>
           <div className="text-4xl font-mono text-purple-400 font-bold mb-6 tracking-widest">{activeSessionCode}</div>
           <div className="bg-gray-800 px-4 py-3 rounded-lg mb-6 break-all font-mono text-sm text-gray-300">
-            http://localhost:1050/p/{activeSessionCode}
+            {`${window.location.origin}/p/${activeSessionCode}`}
           </div>
           <div className="flex gap-4 justify-center">
             <button 

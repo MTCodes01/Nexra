@@ -1,6 +1,6 @@
 import { PresentationStatus, Viewer, PresentationFile, PresenterNotes } from '../types';
 
-const BASE = '/api';
+const BASE = `${import.meta.env.VITE_PUBLIC_URL}/api`;
 
 function getViewerToken(): string | null {
   return sessionStorage.getItem('viewer_token');

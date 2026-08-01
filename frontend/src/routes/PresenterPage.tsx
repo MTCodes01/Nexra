@@ -116,7 +116,7 @@ export default function PresenterPage() {
       <div className="flex-1 relative flex">
         <div className="flex-1 relative">
           <PDFViewer
-            url={`http://localhost:1050/api/presentation/${presentationId}/download`}
+            url={`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download`}
             token={hostToken}
             currentSlide={currentSlide}
             className="w-full h-full"
