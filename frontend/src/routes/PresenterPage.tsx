@@ -22,7 +22,8 @@ export default function PresenterPage() {
     toggleBlackout,
     sendBroadcast,
     notes,
-    saveNotes
+    saveNotes,
+    setTotalSlides
   } = usePresentationContext();
 
   const [error, setError] = useState<string | null>(null);
@@ -162,6 +163,7 @@ export default function PresenterPage() {
             url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
             token={hostToken}
             currentSlide={currentSlide}
+            onTotalPagesLoaded={setTotalSlides}
             className="w-full h-full"
           />
         </div>

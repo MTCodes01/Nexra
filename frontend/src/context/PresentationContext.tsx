@@ -10,6 +10,7 @@ interface PresentationContextValue {
   // State
   currentSlide: number;
   totalSlides: number;
+  setTotalSlides: (total: number) => void;
   viewerCount: number;
   
   // Modes
@@ -209,6 +210,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         presentationTitle,
         currentSlide,
         totalSlides,
+        setTotalSlides,
         viewerCount,
         isManualMode,
         setIsManualMode,

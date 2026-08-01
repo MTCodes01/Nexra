@@ -19,6 +19,7 @@ interface UsePDFReturn {
     pageNum: number,
     canvas: HTMLCanvasElement,
     containerWidth?: number,
+    containerHeight?: number,
     isPreload?: boolean
   ) => Promise<boolean>;
 }
@@ -83,7 +84,7 @@ export function usePDF({ url, token, enabled = true }: UsePDFOptions): UsePDFRet
   }, [url, token, enabled]);
 
   const renderPage = useCallback(
-    async (pageNum: number, canvas: HTMLCanvasElement, containerWidth = 800, isPreload = false): Promise<boolean> => {
+    async (pageNum: number, canvas: HTMLCanvasElement, containerWidth = 800, containerHeight = 600, isPreload = false): Promise<boolean> => {
       if (!pdfDoc) return false;
 
       // Cancel any in-progress render (only for main renders)
@@ -98,9 +99,12 @@ export function usePDF({ url, token, enabled = true }: UsePDFOptions): UsePDFRet
         const unscaled = page.getViewport({ scale: 1 });
         const dpr = window.devicePixelRatio || 1;
         
-        // Calculate scale to make the rendered canvas exactly match the container's physical pixels
+        // Calculate scale to make the rendered canvas fit within container physical pixels
         const targetWidth = containerWidth > 0 ? containerWidth : 800;
-        const scale = (targetWidth / unscaled.width) * dpr;
+        const targetHeight = containerHeight > 0 ? containerHeight : 600;
+        const scaleX = targetWidth / unscaled.width;
+        const scaleY = targetHeight / unscaled.height;
+        const scale = Math.min(scaleX, scaleY) * dpr;
         
         const viewport = page.getViewport({ scale });
 

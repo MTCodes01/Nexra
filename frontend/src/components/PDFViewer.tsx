@@ -39,9 +39,12 @@ const PDFViewer = memo(function PDFViewer({
     slideCanvasCacheRef.current.clear();
   }, [url]);
 
-  // Get current container width for rendering scale
-  const getContainerWidth = useCallback(() => {
-    return containerRef.current?.clientWidth || window.innerWidth;
+  // Get current container width and height for rendering scale
+  const getContainerSize = useCallback(() => {
+    return {
+      width: containerRef.current?.clientWidth || window.innerWidth,
+      height: containerRef.current?.clientHeight || window.innerHeight,
+    };
   }, []);
 
   // Render current slide
@@ -50,7 +53,7 @@ const PDFViewer = memo(function PDFViewer({
     currentSlideRef.current = currentSlide;
 
     const canvas = canvasRef.current;
-    const containerWidth = getContainerWidth();
+    const { width: containerWidth, height: containerHeight } = getContainerSize();
     const cacheKey = `${url}-${currentSlide}`;
 
     // Instant 0ms render for previously visited slides in this PDF
@@ -65,7 +68,7 @@ const PDFViewer = memo(function PDFViewer({
       }
     }
 
-    renderPage(currentSlide, canvas, containerWidth).then((success) => {
+    renderPage(currentSlide, canvas, containerWidth, containerHeight).then((success) => {
       // If render failed, was cancelled, or if canvas unmounted/changed during render, do not cache
       if (!success || canvas !== canvasRef.current) return;
 
@@ -81,7 +84,7 @@ const PDFViewer = memo(function PDFViewer({
         }
       }
     });
-  }, [pdfDoc, currentSlide, url, renderPage, getContainerWidth]);
+  }, [pdfDoc, currentSlide, url, renderPage, getContainerSize]);
 
   if (isLoading) {
     return (
@@ -111,7 +114,7 @@ const PDFViewer = memo(function PDFViewer({
   }
 
   return (
-    <div ref={containerRef} className={`flex items-center justify-center ${className}`}>
+    <div ref={containerRef} className={`flex items-center justify-center overflow-hidden ${className}`}>
       <canvas
         ref={canvasRef}
         style={{

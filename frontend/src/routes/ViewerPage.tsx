@@ -25,6 +25,7 @@ export default function ViewerPage() {
     isBlackout,
     broadcastMessage,
     clearBroadcast,
+    setTotalSlides,
   } = usePresentationContext();
   
   const [error, setError] = useState<string | null>(null);
@@ -90,37 +91,40 @@ export default function ViewerPage() {
 
   return (
     <div className="fixed inset-0 bg-gray-950 overflow-hidden flex flex-col">
-      {/* Top Bar */}
-      <div className="flex-shrink-0 h-14 border-b border-gray-800 bg-gray-900/80 backdrop-blur-md px-4 flex items-center justify-between z-10 relative">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center text-sm shadow-lg shadow-purple-900/20">
-            🎤
+      {/* Top Bar Hover Trigger */}
+      <div className="absolute top-0 left-0 right-0 z-50 h-4 group">
+        {/* Top Bar Content */}
+        <div className="absolute top-0 left-0 right-0 h-14 border-b border-gray-800 bg-gray-900/80 backdrop-blur-md px-4 flex items-center justify-between transform transition-transform duration-300 -translate-y-full group-hover:translate-y-0 focus-within:translate-y-0">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center text-sm shadow-lg shadow-purple-900/20">
+              🎤
+            </div>
+            <span className="text-sm font-semibold text-white">Live Session</span>
+            {!isConnected && (
+              <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30 ml-2">Reconnecting...</span>
+            )}
           </div>
-          <span className="text-sm font-semibold text-white">Live Session</span>
-          {!isConnected && (
-            <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30 ml-2">Reconnecting...</span>
-          )}
-        </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
-            Slide {currentSlide} / {totalSlides}
-          </span>
-          {isManualMode ? (
-            <button 
-              onClick={() => setIsManualMode(false)}
-              className="px-4 py-1.5 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
-            >
-              Follow Presenter
-            </button>
-          ) : (
-            <button 
-              onClick={() => setIsManualMode(true)}
-              className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 text-sm font-medium hover:bg-gray-700 transition-colors"
-            >
-              Read at my own pace
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-700/50">
+              Slide {currentSlide} / {totalSlides}
+            </span>
+            {isManualMode ? (
+              <button 
+                onClick={() => setIsManualMode(false)}
+                className="px-4 py-1.5 rounded-lg bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
+              >
+                Follow Presenter
+              </button>
+            ) : (
+              <button 
+                onClick={() => setIsManualMode(true)}
+                className="px-4 py-1.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 text-sm font-medium hover:bg-gray-700 transition-colors"
+              >
+                Read at my own pace
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -142,6 +146,7 @@ export default function ViewerPage() {
         <PDFViewer
           url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
           currentSlide={currentSlide}
+          onTotalPagesLoaded={setTotalSlides}
           className="w-full h-full"
         />
 
