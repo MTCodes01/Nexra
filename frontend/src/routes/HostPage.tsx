@@ -11,19 +11,20 @@ interface Presentation {
 
 export default function HostPage() {
   const navigate = useNavigate();
-  const { hostToken } = usePresentationContext();
+  const { hostToken, isAuthLoading } = usePresentationContext();
   const [presentations, setPresentations] = useState<Presentation[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [activeSessionCode, setActiveSessionCode] = useState<string | null>(null);
   
   useEffect(() => {
+    if (isAuthLoading) return;
     if (!hostToken) {
       navigate('/');
       return;
     }
     loadLibrary();
-  }, [hostToken, navigate]);
+  }, [hostToken, navigate, isAuthLoading]);
 
   const loadLibrary = async () => {
     try {
@@ -125,6 +126,10 @@ export default function HostPage() {
       console.error(e);
     }
   };
+
+  if (isAuthLoading) {
+    return <div className="min-h-screen bg-gray-950 flex items-center justify-center text-purple-400 animate-pulse">Loading...</div>;
+  }
 
   if (!hostToken) return null;
 

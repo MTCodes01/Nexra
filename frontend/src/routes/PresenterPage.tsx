@@ -16,6 +16,7 @@ export default function PresenterPage() {
     totalSlides,
     isConnected,
     hostToken,
+    isAuthLoading,
     changeHostSlide,
     viewerCount,
     isBlackout,
@@ -56,6 +57,8 @@ export default function PresenterPage() {
   };
 
   useEffect(() => {
+    if (isAuthLoading) return;
+    
     if (!hostToken) {
       navigate('/');
       return;
@@ -76,7 +79,7 @@ export default function PresenterPage() {
     return () => {
       leaveSession();
     };
-  }, [code, joinSession, navigate, leaveSession, hostToken]);
+  }, [code, joinSession, navigate, leaveSession, hostToken, isAuthLoading]);
 
   const handlePrev = useCallback(() => {
     if (currentSlide > 1) changeHostSlide(currentSlide - 1);
@@ -98,6 +101,10 @@ export default function PresenterPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev]);
+
+  if (isAuthLoading) {
+    return <div className="min-h-screen bg-gray-950 flex items-center justify-center text-purple-400 animate-pulse">Authenticating...</div>;
+  }
 
   if (loading) {
     return <div className="min-h-screen bg-gray-950 flex items-center justify-center text-purple-400 animate-pulse">Initializing Presenter View...</div>;

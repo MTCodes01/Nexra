@@ -29,6 +29,7 @@ interface PresentationContextValue {
   // Host
   hostToken: string | null;
   setHostToken: (token: string | null) => void;
+  isAuthLoading: boolean;
   changeHostSlide: (slide: number) => void;
   
   // Presenter features
@@ -45,6 +46,7 @@ const PresentationContext = createContext<PresentationContextValue | null>(null)
 
 export function PresentationProvider({ children }: { children: React.ReactNode }) {
   const [hostToken, setHostToken] = useState<string | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   
   const [sessionCode, setSessionCode] = useState<string | null>(null);
   const [presentationId, setPresentationId] = useState<string | null>(null);
@@ -72,8 +74,15 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         }
         throw new Error('Not auth');
       })
-      .then(data => setHostToken(data.hostId))
-      .catch(() => setHostToken(null));
+      .then(data => {
+        setHostToken(data.hostId);
+      })
+      .catch(() => {
+        setHostToken(null);
+      })
+      .finally(() => {
+        setIsAuthLoading(false);
+      });
   }, []);
 
   const leaveSession = useCallback(() => {
@@ -221,6 +230,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
         leaveSession,
         hostToken,
         setHostToken,
+        isAuthLoading,
         changeHostSlide,
         isBlackout,
         toggleBlackout,
