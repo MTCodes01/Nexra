@@ -36,6 +36,7 @@ async function bootstrap() {
   await fastify.register(require('@fastify/helmet'), {
     contentSecurityPolicy: false, // We'll disable it for static assets, or configure strictly
     crossOriginEmbedderPolicy: false, // Prevents PDF loading from some clients
+    frameguard: false, // Disable X-Frame-Options to allow embedding in the OS portfolio
   });
 
   await fastify.register(require('@fastify/cookie'), {
