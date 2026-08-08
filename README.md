@@ -1,173 +1,116 @@
-# Nexra 🎤
+# Nexra
 
-> A production-quality interactive seminar and live presentation platform.
+A live presentation and interactive seminar platform. 
 
-Audience members scan a QR code, log in with their name & DOB, and watch a live PDF presentation controlled entirely by the presenter. After the seminar, the host can trigger a **Reveal** popup to highlight a key takeaway or interactive quiz to all viewers simultaneously.
+Nexra allows a presenter to control a synchronized PDF presentation for an audience. Audience members join via a browser and their view is kept in sync with the presenter's controls in real-time.
 
 ## Features
 
-- **Live Presentation Sync**: When the host changes slides, all viewers instantly sync via WebSockets.
-- **Audience Dashboard**: The host can see exactly who is connected in real-time.
-- **Interactive Reveals**: The host can trigger full-screen animated modals for the entire audience.
-- **Zero Installation**: Viewers join via browser (mobile & desktop friendly).
-- **Presentation Library**: Upload and switch between multiple PDF decks instantly.
-- **Presenter Notes**: Host can view and edit private Markdown notes per slide.
+- **Real-Time Sync**: Viewers' slides sync instantly via WebSockets when the host changes slides.
+- **Audience Dashboard**: Real-time view of connected attendees.
+- **Interactive Modals**: Trigger full-screen announcements to all viewers simultaneously.
+- **Browser-based**: Works in the browser across mobile and desktop.
+- **Presentation Management**: Upload, store, and switch between multiple PDF decks.
+- **Presenter Notes**: Presenters can write and view markdown-formatted notes for each slide.
 
 ## Tech Stack
 
+- **Frontend**: React (Vite), TypeScript, Tailwind CSS, Framer Motion
+- **Backend**: Node.js, Fastify, TypeScript
+- **Database**: SQLite, Prisma ORM
+- **Real-time**: WebSockets
+- **PDF Rendering**: PDF.js
 
 ## Quick Start
 
 ### Prerequisites
 
-- **Node.js 22+** — [nodejs.org](https://nodejs.org)
-- **npm 10+** (comes with Node.js 22)
+- Node.js 22+
+- npm 10+
 
-### 1. Install Dependencies
+### Setup
 
-```bash
-# From the project root (d:\VScode\PDF viewer)
-npm install                    # root tools (concurrently)
-npm install --prefix backend   # backend deps
-npm install --prefix frontend  # frontend deps
-```
+1. **Install dependencies**
+   ```bash
+   npm install
+   npm install --prefix backend
+   npm install --prefix frontend
+   ```
 
-### 2. Set Up the Database
+2. **Initialize the database**
+   ```bash
+   cd backend
+   npx prisma migrate dev --name init
+   npx tsx src/seed.ts
+   cd ..
+   ```
 
-```bash
-# Generate Prisma client
-cd backend
-npx prisma migrate dev --name init
-npx tsx src/seed.ts            # Creates admin user (Sreedev / 12345678)
-cd ..
-```
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-### 3. Start Development
+### Access Points
 
-```bash
-npm run dev
-```
-
-- **Frontend**: http://localhost:5173
+- **Frontend Viewer**: http://localhost:5173
+- **Host Dashboard**: http://localhost:5173/host (Default login: Sreedev / 12345678)
 - **Backend API**: http://localhost:3001
-- **WebSocket**: ws://localhost:3001/ws
-- **Host Panel**: http://localhost:5173/host
-
----
 
 ## Production Deployment
 
-### 1. Build
+1. **Build the application**
+   ```bash
+   npm run build
+   ```
 
-```bash
-npm run build
-```
+2. **Configure environment variables**
+   
+   Create or edit `backend/.env`:
+   ```env
+   NODE_ENV=production
+   PORT=3000
+   JWT_SECRET=your-secure-random-secret
+   DATABASE_URL="file:../data/database.db"
+   STORAGE_PATH=./storage/presentations
+   TRUST_PROXY=true
+   ```
 
-This builds the React frontend to `frontend/dist/` and compiles the backend TypeScript to `backend/dist/`.
+3. **Deploy database**
+   ```bash
+   cd backend
+   npx prisma migrate deploy
+   npx tsx src/seed.ts
+   cd ..
+   ```
 
-### 2. Configure Environment
+4. **Start the server**
+   ```bash
+   npm run start
+   ```
 
-Edit `backend/.env`:
-
-```env
-NODE_ENV=production
-PORT=3000
-JWT_SECRET=your-strong-random-secret-here
-DATABASE_URL="file:../data/database.db"
-STORAGE_PATH=./storage/presentations
-TRUST_PROXY=true
-```
-
-> ⚠️ **Change JWT_SECRET** to a strong random string in production!
-
-### 3. Database Setup (Production)
-
-```bash
-cd backend
-npx prisma migrate deploy
-npx tsx src/seed.ts
-cd ..
-```
-
-### 4. Start Production Server
-
-```bash
-npm run start
-```
-
-The server starts on port `3000` and serves both the API and the React frontend.
-
-### 5. Cloudflare Tunnel
-
-Install `cloudflared` and run:
-
+To expose the local server to the internet, you can use a tunnel like Cloudflare:
 ```bash
 cloudflared tunnel --url http://localhost:3000
 ```
 
-Or configure in your Cloudflare dashboard to point `nexra.sreedevss.in` → `localhost:3000`.
-
----
-
 ## Project Structure
 
-```
-nexra/
-├── backend/
-│   ├── prisma/schema.prisma        # Database schema
-│   ├── src/
-│   │   ├── server.ts               # Fastify entry point
-│   │   ├── routes/
-│   │   │   ├── auth.ts             # Login endpoints
-│   │   │   ├── presentation.ts     # PDF serve + library
-│   │   │   ├── audience.ts         # Viewer CRUD + CSV
-│   │   │   └── host.ts             # Controls + notes + password
-│   │   ├── websocket/handler.ts    # Native ws server
-│   │   ├── services/
-│   │   │   ├── state.ts            # In-memory + DB state
-│   │   │   └── jwt.ts              # JWT helpers
-│   │   └── seed.ts                 # Initial data seed
-│   ├── storage/presentations/      # PDF library
-│   └── data/database.db            # SQLite database
-│
-├── frontend/
-│   └── src/
-│       ├── routes/
-│       │   ├── LoginPage.tsx       # Audience login (Name + DOB)
-│       │   ├── ViewerPage.tsx      # Fullscreen presentation viewer
-│       │   └── HostPage.tsx        # Presenter dashboard
-│       ├── components/             # Reusable UI
-│       ├── hooks/                  # useWebSocket, usePDF
-│       ├── context/                # PresentationContext
-│       └── api/client.ts           # Typed API calls
-│
-└── package.json                    # Root scripts
-```
+- `backend/`: Fastify server, WebSocket handlers, Prisma schema, and API routes.
+- `frontend/`: React application, UI components, PDF viewer, and WebSocket client.
+- `package.json`: Root configuration and concurrent start scripts.
 
----
+## Host Panel Features
 
-## Host Panel
-
-**URL:** `/host`  
-**Default credentials:** `Sreedev` / `12345678`
-
-### Features
-
-| Feature | Description |
-|---|---|
-| 📚 Presentation Library | Upload, select, delete PDFs |
-| ▶ Start / ⏹ End | Begin or end the presentation |
-| ← → Navigation | Prev/Next slide (keyboard + swipe) |
-| 🔢 Jump to Slide | Go to any slide instantly |
-| ⛶ Fullscreen | Preview PDF in fullscreen |
-| 🌑 Black Screen | Toggle black screen for all viewers |
-| 🎭 Reveal | Show key takeaway modal to all viewers |
-| ⏱ Timer | Presentation stopwatch |
-| 📝 Presenter Notes | Per-slide notes, auto-saved |
-| 👥 Audience List | Live attendee table with search/sort |
-| 📥 CSV Export | Download audience data |
-| 🗑 Clear Database | Delete all audience records |
-| 🔑 Change Password | Update host password |
+- **Presentation Library**: Upload, select, and delete PDFs.
+- **Presentation Controls**: Start, end, and navigate slides (keyboard + swipe).
+- **Fullscreen Preview**: Preview PDF in fullscreen.
+- **Black Screen**: Toggle black screen for all viewers.
+- **Reveal**: Show a key takeaway modal to all viewers.
+- **Timer**: Presentation stopwatch.
+- **Presenter Notes**: Per-slide notes, auto-saved.
+- **Audience List**: Live attendee table with search and sort.
+- **Data Export**: Download audience data as CSV.
+- **Database Management**: Clear all audience records.
 
 ### Keyboard Shortcuts
 
@@ -181,67 +124,12 @@ nexra/
 | Swipe ← | Next slide (mobile) |
 | Swipe → | Previous slide (mobile) |
 
----
+## Data Collection
 
-## WebSocket Events
-
-### Server → All Clients
-
-```json
-{ "type": "slideChange", "slide": 7 }
-{ "type": "presentationStarted", "totalSlides": 20 }
-{ "type": "presentationEnded" }
-{ "type": "viewerCountChanged", "count": 42 }
-{ "type": "blackScreen", "active": true }
-{ "type": "reveal" }
-{ "type": "pdfUpdated", "filename": "nexra.pdf" }
-```
-
-### Client → Server
-
-```json
-{ "type": "identify", "token": "JWT..." }
-{ "type": "ping" }
-```
-
----
-
-## PDF Strategy
-
-Clients download the PDF **once** via `GET /api/presentation/pdf` with JWT auth.  
-PDF.js renders pages **locally** in the browser.  
-WebSocket only transmits the **current slide number** — a tiny integer payload.  
-Adjacent pages (±1) are preloaded in background canvases for instant transitions.
-
----
-
-## Data Collected
-
-For each audience member:
-
-| Field | Description |
-|---|---|
-| Name | As entered on login |
-| Date of Birth | As entered on login |
-| IP Address | Via `CF-Connecting-IP` / `X-Forwarded-For` |
-| Browser | Detected from User-Agent |
-| Session ID | UUID per login |
-| Join Time | Timestamp |
-| Last Seen | Auto-updated timestamp |
-| Online Status | Live WebSocket connection status |
-
----
-
-## Default Credentials
-
-| Role | Username | Password |
-|---|---|---|
-| Host | `Sreedev` | `12345678` |
-
-> 🔐 Change the password immediately after first login via **Settings → Change Password**.
-
----
+For each audience member, the following is collected during a session:
+- Name and Date of Birth
+- IP Address and Browser
+- Session ID, Join Time, and Last Seen status
 
 ## License
-
-MIT — For educational use only.
+MIT
