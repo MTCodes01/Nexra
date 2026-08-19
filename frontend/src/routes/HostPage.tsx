@@ -7,7 +7,7 @@ interface Presentation {
   title: string;
   slideCount: number;
   uploadTimestamp: string;
-  sessions?: { sessionCode: string }[];
+  sessions?: { id: string; sessionCode: string }[];
 }
 
 export default function HostPage() {
@@ -109,6 +109,18 @@ export default function HostPage() {
     }
   };
 
+  const handleEndSession = async (sessionId: string) => {
+    try {
+      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${sessionId}/end`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      await loadLibrary();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleStartSession = async (id: string) => {
     try {
       const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session`, {
@@ -158,7 +170,7 @@ export default function HostPage() {
               onClick={() => setActiveSessionCode(null)}
               className="px-6 py-2 bg-gray-800 rounded-lg text-white font-medium hover:bg-gray-700 transition-colors"
             >
-              End Session
+              Back to Library
             </button>
           </div>
         </div>
@@ -214,24 +226,38 @@ export default function HostPage() {
                       Active Session
                     </div>
                     <a 
-                      href={`/p/${p.sessions[0].sessionCode}`}
+                      href={`/p/${p.sessions?.[0]?.sessionCode}`}
                       target="_blank"
                       rel="noreferrer"
                       className="font-mono text-xs text-gray-300 break-all bg-black/40 p-2 rounded border border-gray-800 hover:border-purple-500/50 hover:text-white transition-colors block"
                     >
-                      {`${window.location.origin}/p/${p.sessions[0].sessionCode}`}
+                      {`${window.location.origin}/p/${p.sessions?.[0]?.sessionCode}`}
                     </a>
                   </div>
                 )}
                 
                 <div className="flex flex-wrap gap-2">
                   {p.sessions && p.sessions.length > 0 ? (
-                    <button 
-                      onClick={() => window.open(`/present/${p.sessions![0].sessionCode}`, '_blank')}
-                      className="w-full px-3 py-2 bg-green-600/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-600/30 transition-colors mb-2 border border-green-500/20"
-                    >
-                      Resume Session
-                    </button>
+                    <div className="w-full flex gap-2 mb-2">
+                      <button 
+                        onClick={() => {
+                          const code = p.sessions?.[0]?.sessionCode;
+                          if (code) window.open(`/present/${code}`, '_blank');
+                        }}
+                        className="flex-1 px-3 py-2 bg-green-600/20 text-green-400 rounded-lg text-sm font-medium hover:bg-green-600/30 transition-colors border border-green-500/20"
+                      >
+                        Resume
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const id = p.sessions?.[0]?.id;
+                          if (id) handleEndSession(id);
+                        }}
+                        className="flex-1 px-3 py-2 bg-gray-800 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors border border-gray-700"
+                      >
+                        End Session
+                      </button>
+                    </div>
                   ) : (
                     <button 
                       onClick={() => handleStartSession(p.id)}

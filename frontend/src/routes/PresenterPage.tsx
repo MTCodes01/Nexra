@@ -36,6 +36,45 @@ export default function PresenterPage() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [broadcastInput, setBroadcastInput] = useState('');
   const [currentNote, setCurrentNote] = useState('');
+  
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(e => {
+          console.error('Fullscreen failed', e);
+          setIsFullscreen(true); // Fallback
+        });
+      } else {
+        setIsFullscreen(true); // iOS fallback
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else {
+        setIsFullscreen(false);
+      }
+    }
+  };
+
+  const handleExitFullscreen = () => {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen();
+    } else {
+      setIsFullscreen(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentNote(notes?.[currentSlide] || '');
@@ -92,6 +131,28 @@ export default function PresenterPage() {
     if (currentSlide < totalSlides) changeHostSlide(currentSlide + 1);
   }, [currentSlide, totalSlides, changeHostSlide]);
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEndHandler = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      handleNext();
+    } else if (isRightSwipe) {
+      handlePrev();
+    }
+  };
+
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -124,8 +185,9 @@ export default function PresenterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col h-screen">
+    <div className={`bg-gray-950 flex flex-col ${isFullscreen ? 'fixed inset-0 z-50' : 'min-h-screen h-screen'}`}>
       {/* Top Bar */}
+      {!isFullscreen && (
       <div className="h-auto md:h-16 border-b border-gray-800 bg-gray-900 px-4 md:px-6 flex flex-col md:flex-row items-center justify-between shrink-0 gap-4 py-4 md:py-0">
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
           <img src="/favicon.svg" alt="Nexra Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(168,85,247,0.4)] shrink-0" />
@@ -146,6 +208,7 @@ export default function PresenterPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 md:gap-3 justify-center w-full md:w-auto">
+
           <button 
             onClick={() => setShowBroadcast(true)}
             className="px-4 py-1.5 rounded-lg bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 text-sm font-medium transition-colors border border-purple-500/20 flex-1 md:flex-none"
@@ -166,10 +229,16 @@ export default function PresenterPage() {
           </button>
         </div>
       </div>
+      )}
 
       {/* Main Content */}
-      <div className="flex-1 relative flex flex-col md:flex-row min-h-0 overflow-hidden">
-        <div className="flex-1 relative min-h-0 min-w-0 bg-black">
+      <div 
+        className={`flex-1 relative flex min-h-0 overflow-hidden ${isFullscreen ? 'flex-row' : 'flex-col md:flex-row'}`}
+        onTouchStart={isFullscreen ? onTouchStart : undefined}
+        onTouchMove={isFullscreen ? onTouchMove : undefined}
+        onTouchEnd={isFullscreen ? onTouchEndHandler : undefined}
+      >
+        <div className={`relative min-h-0 min-w-0 bg-black ${isFullscreen ? 'w-[75%]' : 'flex-1'}`}>
           <PDFViewer
             url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
             token={hostToken}
@@ -178,50 +247,81 @@ export default function PresenterPage() {
             qualityMultiplier={settings?.defaultZoom ? settings.defaultZoom / 100 : 1}
             className="w-full h-full"
           />
+          <button 
+            onClick={isFullscreen ? handleExitFullscreen : toggleFullscreen} 
+            className="absolute top-4 right-4 z-50 p-2 bg-gray-800/80 rounded-full text-white backdrop-blur-sm hover:bg-gray-700"
+            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+          >
+            {isFullscreen ? (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+              </svg>
+            )}
+          </button>
         </div>
 
-        {/* Presenter Sidebar Controls */}
-        <div className="w-full md:w-80 h-auto md:h-full bg-gray-900 border-t md:border-t-0 md:border-l border-gray-800 p-4 md:p-6 flex flex-col gap-4 md:gap-6 shrink-0 overflow-y-auto">
-          <div>
-            <h2 className="text-white font-bold text-lg mb-2">Controls</h2>
-            <div className="flex gap-2">
-              <button 
-                onClick={handlePrev} 
-                disabled={currentSlide <= 1}
-                className="flex-1 py-4 rounded-xl flex items-center justify-center bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-50 transition-colors border border-gray-700"
-              >
-                ← Prev
-              </button>
-              <button 
-                onClick={handleNext}
-                disabled={currentSlide >= totalSlides}
-                className="flex-1 py-4 rounded-xl flex items-center justify-center bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-50 transition-colors shadow-lg shadow-purple-900/20"
-              >
-                Next →
-              </button>
-            </div>
-            <p className="text-gray-500 text-xs mt-3 text-center">Use Left/Right arrow keys or Spacebar to navigate.</p>
-          </div>
-          
-          <button
-            onClick={() => toggleBlackout(!isBlackout)}
-            className={`py-3 rounded-xl flex items-center justify-center font-medium transition-colors border ${isBlackout ? 'bg-red-900/40 text-red-400 border-red-500/50' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
-          >
-            {isBlackout ? 'Resume Presentation' : 'Black Screen'}
-          </button>
-
-          <div className="flex-1 flex flex-col min-h-0 min-h-[150px] md:min-h-0">
-            <h2 className="text-white font-bold text-sm mb-2">Slide Notes</h2>
+        {isFullscreen ? (
+          <div className="w-[25%] bg-gray-900 border-l border-gray-800 p-3 flex flex-col shrink-0 overflow-y-auto">
+            <h2 className="text-white font-bold text-sm mb-2 truncate">Notes</h2>
             <textarea
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-gray-300 resize-none focus:outline-none focus:border-purple-500"
-              placeholder="Add your presenter notes here..."
+              className="flex-1 w-full bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-300 resize-none focus:outline-none focus:border-purple-500"
+              placeholder="Notes..."
               value={currentNote}
               onChange={handleNoteChange}
               onBlur={handleNoteBlur}
             />
-            <p className="text-xs text-gray-500 mt-2 text-right">Auto-saves when you click away</p>
+            <div className="mt-4 flex flex-col gap-2 opacity-50">
+              <p className="text-[10px] text-gray-500 text-center leading-tight">Swipe left/right to change slides</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="w-full md:w-80 h-auto md:h-full bg-gray-900 border-t md:border-t-0 md:border-l border-gray-800 p-4 md:p-6 flex flex-col gap-4 md:gap-6 shrink-0 overflow-y-auto">
+            {/* Presenter Sidebar Controls */}
+            <div>
+              <h2 className="text-white font-bold text-lg mb-2">Controls</h2>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handlePrev} 
+                  disabled={currentSlide <= 1}
+                  className="flex-1 py-4 rounded-xl flex items-center justify-center bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-50 transition-colors border border-gray-700"
+                >
+                  ← Prev
+                </button>
+                <button 
+                  onClick={handleNext}
+                  disabled={currentSlide >= totalSlides}
+                  className="flex-1 py-4 rounded-xl flex items-center justify-center bg-purple-600 text-white hover:bg-purple-500 disabled:opacity-50 transition-colors shadow-lg shadow-purple-900/20"
+                >
+                  Next →
+                </button>
+              </div>
+              <p className="text-gray-500 text-xs mt-3 text-center">Use Left/Right arrow keys or Spacebar to navigate.</p>
+            </div>
+            
+            <button
+              onClick={() => toggleBlackout(!isBlackout)}
+              className={`py-3 rounded-xl flex items-center justify-center font-medium transition-colors border ${isBlackout ? 'bg-red-900/40 text-red-400 border-red-500/50' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
+            >
+              {isBlackout ? 'Resume Presentation' : 'Black Screen'}
+            </button>
+
+            <div className="flex-1 flex flex-col min-h-0 min-h-[150px] md:min-h-0">
+              <h2 className="text-white font-bold text-sm mb-2">Slide Notes</h2>
+              <textarea
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-xl p-3 text-sm text-gray-300 resize-none focus:outline-none focus:border-purple-500"
+                placeholder="Add your presenter notes here..."
+                value={currentNote}
+                onChange={handleNoteChange}
+                onBlur={handleNoteBlur}
+              />
+              <p className="text-xs text-gray-500 mt-2 text-right">Auto-saves when you click away</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Broadcast Modal */}

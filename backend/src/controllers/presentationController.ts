@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import prisma from '../prisma/client';
 import { requireHost } from '../middlewares/auth';
 import { MultipartFile } from '@fastify/multipart';
+import { Buffer } from 'buffer';
 
 function getStoragePath(): string {
   const storagePath = process.env.UPLOAD_PATH || './storage/presentations';
@@ -88,7 +89,7 @@ export async function listPresentations(request: FastifyRequest, reply: FastifyR
     include: {
       sessions: {
         where: { isActive: true },
-        select: { sessionCode: true }
+        select: { id: true, sessionCode: true }
       }
     },
     orderBy: { updatedTimestamp: 'desc' },
@@ -201,7 +202,7 @@ export async function updateNotes(request: FastifyRequest, reply: FastifyReply) 
   if (!host) return;
 
   const { id } = request.params as { id: string };
-  const { notes } = request.body as { notes: Record<number, string> };
+  const { notes } = request.body as { notes: any };
 
   const presentation = await prisma.presentation.findFirst({
     where: { id, hostId: host.hostId },

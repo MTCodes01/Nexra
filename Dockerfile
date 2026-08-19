@@ -19,14 +19,20 @@ RUN npm run build
 FROM node:22-alpine
 WORKDIR /app
 
-# Copy backend
-COPY --from=backend-builder /app/backend/package*.json ./backend/
-COPY --from=backend-builder /app/backend/node_modules ./backend/node_modules
-COPY --from=backend-builder /app/backend/dist ./backend/dist
-COPY --from=backend-builder /app/backend/prisma ./backend/prisma
+# Copy backend package files
+COPY backend/package*.json ./backend/
+WORKDIR /app/backend
+RUN npm ci --omit=dev && npm install prisma
+
+# Copy generated Prisma and built app
+COPY --from=backend-builder /app/backend/dist ./dist
+COPY --from=backend-builder /app/backend/prisma ./prisma
+# Copy the generated Prisma client from builder
+COPY --from=backend-builder /app/backend/node_modules/@prisma ./node_modules/@prisma
+COPY --from=backend-builder /app/backend/node_modules/.prisma ./node_modules/.prisma
 
 # Copy frontend build to backend so fastify can serve it
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 WORKDIR /app/backend
 # Create storage path

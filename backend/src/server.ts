@@ -53,6 +53,13 @@ async function bootstrap() {
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   });
 
+  // Register fastify-static globally without serving anything just to decorate `reply` with `.sendFile()`
+  // This ensures reply.sendFile() works in controllers even in development mode.
+  await fastify.register(staticFiles, {
+    root: process.cwd(),
+    serve: false,
+  });
+
   fastify.setErrorHandler((error, request, reply) => {
     // Log the actual error internally
     request.log.error(error);
@@ -75,11 +82,12 @@ async function bootstrap() {
       await fastify.register(staticFiles, {
         root: frontendDist,
         prefix: '/',
+        decorateReply: false, // Prevent "fastify-static already registered" error
       });
 
       fastify.setNotFoundHandler(async (request, reply) => {
         if (!request.url.startsWith('/api') && !request.url.startsWith('/ws')) {
-          return reply.sendFile('index.html');
+          return reply.sendFile('index.html', frontendDist);
         }
         return reply.status(404).send({ error: 'Not found' });
       });
