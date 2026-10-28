@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
+import { parse as parseCookie } from 'cookie';
 import prisma from '../prisma/client';
+import { verifyAccessToken } from '../services/jwt';
 
 interface ExtWebSocket extends WebSocket {
   isAlive: boolean;
@@ -39,7 +41,7 @@ export function setupWebSocket(server: Server) {
           if (msg.role === 'host') {
             // Validate host auth via cookie
             const cookieHeader = request.headers.cookie || '';
-            const cookies = require('cookie').parseCookie(cookieHeader);
+            const cookies = parseCookie(cookieHeader);
             const token = cookies.accessToken;
             
             if (!token) {
@@ -48,7 +50,7 @@ export function setupWebSocket(server: Server) {
               return;
             }
             
-            const payload = require('../services/jwt').verifyAccessToken(token);
+            const payload = verifyAccessToken(token);
             if (!payload || payload.role !== 'host') {
               ws.send(JSON.stringify({ type: 'error', message: 'Unauthorized: Invalid token' }));
               ws.close(4001, 'Unauthorized');
@@ -65,7 +67,15 @@ export function setupWebSocket(server: Server) {
           rooms.get(ws.sessionCode)!.add(ws);
 
           if (ws.role === 'viewer') {
-            await updateViewerCount(ws.sessionCode, 1);
+            const session = await prisma.session.findUnique({
+              where: { sessionCode: ws.sessionCode },
+              select: { currentSlide: true, isBlackout: true },
+            });
+            if (session) {
+              ws.send(JSON.stringify({ type: 'slide_changed', slide: session.currentSlide }));
+              ws.send(JSON.stringify({ type: 'blackout', isBlackout: session.isBlackout }));
+            }
+            await updateViewerCount(ws.sessionCode);
           }
         } 
         else if (msg.type === 'slide_change' && ws.role === 'host') {
@@ -95,6 +105,9 @@ export function setupWebSocket(server: Server) {
           const oldRoom = rooms.get(ws.sessionCode);
           if (oldRoom) {
             oldRoom.delete(ws);
+            if (oldRoom.size === 0) {
+              rooms.delete(ws.sessionCode);
+            }
           }
           ws.sessionCode = msg.newCode;
           if (!rooms.has(ws.sessionCode)) {
@@ -109,9 +122,13 @@ export function setupWebSocket(server: Server) {
 
     ws.on('close', async () => {
       if (ws.sessionCode && rooms.has(ws.sessionCode)) {
-        rooms.get(ws.sessionCode)!.delete(ws);
+        const room = rooms.get(ws.sessionCode)!;
+        room.delete(ws);
         if (ws.role === 'viewer') {
-          await updateViewerCount(ws.sessionCode, -1);
+          await updateViewerCount(ws.sessionCode);
+        }
+        if (room.size === 0) {
+          rooms.delete(ws.sessionCode);
         }
       }
     });
@@ -129,16 +146,15 @@ export function setupWebSocket(server: Server) {
   wss.on('close', () => clearInterval(interval));
 }
 
-async function updateViewerCount(sessionCode: string, change: number) {
+async function updateViewerCount(sessionCode: string) {
   try {
-    const session = await prisma.session.findUnique({ where: { sessionCode } });
-    if (!session) return;
-    const newCount = Math.max(0, session.viewerCount + change);
+    const room = rooms.get(sessionCode);
+    const activeCount = room ? Array.from(room).filter((c) => c.role === 'viewer').length : 0;
     await prisma.session.update({
       where: { sessionCode },
-      data: { viewerCount: newCount },
+      data: { viewerCount: activeCount },
     });
-    broadcastToRoom(sessionCode, { type: 'viewer_count', count: newCount });
+    broadcastToRoom(sessionCode, { type: 'viewer_count', count: activeCount });
   } catch (error) {
     console.error('Error updating viewer count:', error);
   }
