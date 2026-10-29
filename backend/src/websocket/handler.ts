@@ -1,6 +1,18 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
-import { parse as parseCookie } from 'cookie';
+// Helper to parse cookies from header
+function parseCookie(header: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!header) return result;
+  const parts = header.split(';');
+  for (const part of parts) {
+    const pair = part.trim().split('=');
+    if (pair.length >= 2) {
+      result[pair[0]] = decodeURIComponent(pair.slice(1).join('='));
+    }
+  }
+  return result;
+}
 import prisma from '../prisma/client';
 import { verifyAccessToken } from '../services/jwt';
 

@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePresentationContext } from '../context/PresentationContext';
+import QRCodeModal from '../components/QRCodeModal';
+
+const API_BASE = (import.meta.env.VITE_PUBLIC_URL || '').replace(/\/$/, '');
 
 interface Presentation {
   id: string;
@@ -29,7 +32,7 @@ export default function HostPage() {
 
   const loadLibrary = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library`, {
+      const res = await fetch(`${API_BASE}/api/presentation/library`, {
         credentials: 'include'
       });
       if (res.ok) {
@@ -52,7 +55,7 @@ export default function HostPage() {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/upload`, {
+      const res = await fetch(`${API_BASE}/api/presentation/library/upload`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -69,7 +72,7 @@ export default function HostPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${id}`, {
+      await fetch(`${API_BASE}/api/presentation/library/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -81,7 +84,7 @@ export default function HostPage() {
 
   const handleDuplicate = async (id: string) => {
     try {
-      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${id}/duplicate`, {
+      await fetch(`${API_BASE}/api/presentation/library/${id}/duplicate`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -95,7 +98,7 @@ export default function HostPage() {
     const newTitle = prompt('Enter new title:', currentTitle);
     if (!newTitle || newTitle === currentTitle) return;
     try {
-      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${id}/rename`, {
+      await fetch(`${API_BASE}/api/presentation/library/${id}/rename`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 
@@ -111,7 +114,7 @@ export default function HostPage() {
 
   const handleEndSession = async (sessionId: string) => {
     try {
-      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${sessionId}/end`, {
+      await fetch(`${API_BASE}/api/session/${sessionId}/end`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -123,7 +126,7 @@ export default function HostPage() {
 
   const handleStartSession = async (id: string) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session`, {
+      const res = await fetch(`${API_BASE}/api/session`, {
         method: 'POST',
         credentials: 'include',
         headers: { 
@@ -147,32 +150,22 @@ export default function HostPage() {
   if (!hostToken) return null;
 
   if (activeSessionCode) {
-    // Basic active session view
     return (
       <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-4 text-center">Session Active!</h1>
-        <div className="bg-gray-900 p-6 md:p-8 rounded-2xl border border-purple-500 shadow-2xl text-center w-full max-w-lg">
-          <p className="text-gray-400 mb-2">Share this link with your audience:</p>
-          <div className="text-3xl md:text-4xl font-mono text-purple-400 font-bold mb-6 tracking-widest">{activeSessionCode}</div>
-          <div className="bg-gray-800 px-4 py-3 rounded-lg mb-6 break-all font-mono text-xs md:text-sm text-gray-300">
-            {`${window.location.origin}/p/${activeSessionCode}`}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <button 
-              onClick={() => {
-                window.open(`/present/${activeSessionCode}`, '_blank');
-              }}
-              className="px-6 py-2 bg-purple-600 rounded-lg text-white font-medium hover:bg-purple-500 transition-colors"
-            >
-              Open Presenter View
-            </button>
-            <button 
-              onClick={() => setActiveSessionCode(null)}
-              className="px-6 py-2 bg-gray-800 rounded-lg text-white font-medium hover:bg-gray-700 transition-colors"
-            >
-              Back to Library
-            </button>
-          </div>
+        <QRCodeModal sessionCode={activeSessionCode} inline />
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => window.open(`/present/${activeSessionCode}`, '_blank')}
+            className="px-6 py-2.5 bg-purple-600 rounded-xl text-white font-medium hover:bg-purple-500 transition-colors shadow-lg shadow-purple-900/30"
+          >
+            Open Presenter View ↗
+          </button>
+          <button
+            onClick={() => setActiveSessionCode(null)}
+            className="px-6 py-2.5 bg-gray-800 rounded-xl text-white font-medium hover:bg-gray-700 transition-colors border border-gray-700"
+          >
+            Back to Library
+          </button>
         </div>
       </div>
     );

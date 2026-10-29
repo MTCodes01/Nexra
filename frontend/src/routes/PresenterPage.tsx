@@ -2,6 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePresentationContext } from '../context/PresentationContext';
 import PDFViewer from '../components/PDFViewer';
+import QRCodeModal from '../components/QRCodeModal';
+
+const API_BASE = (import.meta.env.VITE_PUBLIC_URL || '').replace(/\/$/, '');
 
 export default function PresenterPage() {
   const navigate = useNavigate();
@@ -10,6 +13,7 @@ export default function PresenterPage() {
   const {
     sessionCode,
     presentationId,
+    presentationTitle,
     joinSession,
     leaveSession,
     currentSlide,
@@ -34,6 +38,7 @@ export default function PresenterPage() {
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showBroadcast, setShowBroadcast] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
   const [broadcastInput, setBroadcastInput] = useState('');
   const [currentNote, setCurrentNote] = useState('');
   
@@ -156,10 +161,20 @@ export default function PresenterPage() {
   // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept typing in inputs or textareas
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
       if (e.key === 'ArrowRight' || e.key === ' ') {
         handleNext();
       } else if (e.key === 'ArrowLeft') {
         handlePrev();
+      } else if (e.key === 'q' || e.key === 'Q') {
+        setShowQRModal((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -208,7 +223,14 @@ export default function PresenterPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2 md:gap-3 justify-center w-full md:w-auto">
-
+          <button 
+            onClick={() => setShowQRModal(true)}
+            className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-semibold transition-all shadow-md shadow-purple-900/30 flex items-center gap-1.5 flex-1 md:flex-none active:scale-95"
+            title="Display QR code for audience to join (Shortcut: Q)"
+          >
+            <span>📱 QR Code</span>
+            <span className="hidden sm:inline text-[10px] text-purple-200 bg-black/30 px-1 py-0.2 rounded border border-purple-400/30 font-mono">Q</span>
+          </button>
           <button 
             onClick={() => setShowBroadcast(true)}
             className="px-4 py-1.5 rounded-lg bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 text-sm font-medium transition-colors border border-purple-500/20 flex-1 md:flex-none"
@@ -240,7 +262,7 @@ export default function PresenterPage() {
       >
         <div className={`relative min-h-0 min-w-0 bg-black ${isFullscreen ? 'w-[75%]' : 'flex-1'}`}>
           <PDFViewer
-            url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
+            url={presentationId ? `${API_BASE}/api/presentation/${presentationId}/download` : null}
             token={hostToken}
             currentSlide={currentSlide}
             onTotalPagesLoaded={setTotalSlides}
@@ -438,6 +460,13 @@ export default function PresenterPage() {
           </div>
         </div>
       )}
+
+      {/* Audience QR Code Modal */}
+      <QRCodeModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        sessionCode={sessionCode || ''}
+      />
     </div>
   );
 }

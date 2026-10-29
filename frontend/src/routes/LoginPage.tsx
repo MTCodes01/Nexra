@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { usePresentationContext } from '../context/PresentationContext';
 
+const API_BASE = (import.meta.env.VITE_PUBLIC_URL || '').replace(/\/$/, '');
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setHostToken } = usePresentationContext();
@@ -33,7 +35,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const endpoint = mode === 'host_login' ? '/api/auth/login' : '/api/auth/register';
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}${endpoint}`, {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

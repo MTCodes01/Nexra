@@ -54,6 +54,8 @@ interface PresentationContextValue {
 
 const PresentationContext = createContext<PresentationContextValue | null>(null);
 
+const API_BASE = (import.meta.env.VITE_PUBLIC_URL || '').replace(/\/$/, '');
+
 export function PresentationProvider({ children }: { children: React.ReactNode }) {
   const [hostToken, setHostToken] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -76,21 +78,29 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const [notes, setNotes] = useState<Record<number, string>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activeSessionRef = useRef<{ code: string; role: 'viewer' | 'host' } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        let res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/me`, { credentials: 'include' });
+        let res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
         
         // If expired, try refresh
         if (res.status === 401) {
-          const refreshRes = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/refresh`, {
+          const refreshRes = await fetch(`${API_BASE}/api/auth/refresh`, {
             method: 'POST',
             credentials: 'include'
           });
           if (refreshRes.ok) {
             // Retry /me
-            res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/me`, { credentials: 'include' });
+            res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
           }
         }
         
@@ -112,7 +122,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/auth/logout`, {
+      await fetch(`${API_BASE}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -124,6 +134,11 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const leaveSession = useCallback(() => {
+    activeSessionRef.current = null;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -131,6 +146,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
     setSessionCode(null);
     setPresentationId(null);
     setIsConnected(false);
+    setIsReconnecting(false);
   }, []);
 
   const changeHostSlide = useCallback((slide: number) => {
@@ -146,8 +162,9 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const joinSession = useCallback(async (code: string, role: 'viewer' | 'host' = 'viewer') => {
+    activeSessionRef.current = { code, role };
     try {
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${code}`, {
+      const res = await fetch(`${API_BASE}/api/session/${code}`, {
         credentials: 'include'
       });
       if (!res.ok) throw new Error('Session not found');
@@ -167,8 +184,13 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
       }
       if (data.notes) setNotes(data.notes);
       
+      // Close previous ws if open
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+
       // Connect WebSocket
-      const baseUrl = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
+      const baseUrl = API_BASE || window.location.origin;
       const wsUrlObj = new URL('/ws', baseUrl);
       wsUrlObj.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const ws = new WebSocket(wsUrlObj.toString());
@@ -215,8 +237,15 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
 
       ws.onclose = () => {
         setIsConnected(false);
-        setIsReconnecting(true);
-        // Implement exponential backoff reconnect if needed
+        if (activeSessionRef.current) {
+          setIsReconnecting(true);
+          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (activeSessionRef.current) {
+              joinSession(activeSessionRef.current.code, activeSessionRef.current.role);
+            }
+          }, 2500);
+        }
       };
 
       return true;
@@ -248,7 +277,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
     if (!sessionCode) return;
     try {
       const merged = { ...settings, ...newSettings } as SessionSettings;
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${sessionCode}/settings`, {
+      const res = await fetch(`${API_BASE}/api/session/${sessionCode}/settings`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -268,7 +297,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const regenerateSessionCode = useCallback(async () => {
     if (!sessionCode) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/session/${sessionCode}/regenerate-code`, {
+      const res = await fetch(`${API_BASE}/api/session/${sessionCode}/regenerate-code`, {
         method: 'POST',
         credentials: 'include'
       });
@@ -295,7 +324,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const saveNotes = useCallback(async (newNotes: Record<number, string>) => {
     if (!presentationId) return;
     try {
-      await fetch(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/library/${presentationId}/notes`, {
+      await fetch(`${API_BASE}/api/presentation/library/${presentationId}/notes`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
