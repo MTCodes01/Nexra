@@ -12,6 +12,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // Listen on all local IPv4/IPv6 addresses so other devices on Wi-Fi can join
     port: 5173,
     proxy: {
       '/api': {

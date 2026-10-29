@@ -3,6 +3,8 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { usePresentationContext } from '../context/PresentationContext';
 import PDFViewer from '../components/PDFViewer';
 
+const API_BASE = (import.meta.env.VITE_PUBLIC_URL || '').replace(/\/$/, '');
+
 export default function ViewerPage() {
   const navigate = useNavigate();
   const { code: routeCode } = useParams<{ code: string }>();
@@ -91,7 +93,7 @@ export default function ViewerPage() {
 
   const handleDownload = () => {
     if (presentationId) {
-      window.open(`${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download`, '_blank');
+      window.open(`${API_BASE}/api/presentation/${presentationId}/download`, '_blank');
     }
   };
 
@@ -182,7 +184,7 @@ export default function ViewerPage() {
         )}
 
         <PDFViewer
-          url={presentationId ? `${import.meta.env.VITE_PUBLIC_URL}/api/presentation/${presentationId}/download` : null}
+          url={presentationId ? `${API_BASE}/api/presentation/${presentationId}/download` : null}
           currentSlide={currentSlide}
           onTotalPagesLoaded={setTotalSlides}
           qualityMultiplier={settings?.defaultZoom ? settings.defaultZoom / 100 : 1}

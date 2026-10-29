@@ -11,7 +11,7 @@ import { presentationRoutes } from './routes/presentation';
 import { sessionRoutes } from './routes/session';
 import { setupWebSocket } from './websocket/handler';
 
-const PORT = parseInt(process.env.PORT || '1050', 10);
+const PORT = parseInt(process.env.PORT || '3001', 10);
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 const storagePath = join(process.cwd(), process.env.UPLOAD_PATH || './storage/presentations');
