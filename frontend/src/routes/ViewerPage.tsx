@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { usePresentationContext } from '../context/PresentationContext';
 import PDFViewer from '../components/PDFViewer';
+import { AnimalBroadcast } from '../components/AnimalBroadcast';
 
 const API_BASE = (import.meta.env.VITE_PUBLIC_URL || '').replace(/\/$/, '');
 
@@ -176,12 +177,7 @@ export default function ViewerPage() {
           </div>
         )}
         
-        {broadcastMessage && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-purple-600 text-white px-6 py-3 rounded-xl shadow-2xl animate-bounce">
-            <span className="font-bold mr-2">📢 Host:</span>
-            {broadcastMessage}
-          </div>
-        )}
+        <AnimalBroadcast broadcast={broadcastMessage} onDismiss={clearBroadcast} />
 
         <PDFViewer
           url={presentationId ? `${API_BASE}/api/presentation/${presentationId}/download` : null}

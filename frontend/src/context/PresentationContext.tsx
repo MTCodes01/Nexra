@@ -7,6 +7,11 @@ export interface SessionSettings {
   defaultZoom: number; // Used for slideQuality (100 = 1x, 200 = 2x, 300 = 3x)
 }
 
+export interface BroadcastPayload {
+  message: string;
+  animal?: string;
+}
+
 interface PresentationContextValue {
   // Session details
   sessionCode: string | null;
@@ -45,8 +50,8 @@ interface PresentationContextValue {
   // Presenter features
   isBlackout: boolean;
   toggleBlackout: (blackout: boolean) => void;
-  broadcastMessage: string | null;
-  sendBroadcast: (message: string) => void;
+  broadcastMessage: BroadcastPayload | null;
+  sendBroadcast: (message: string, animal?: string) => void;
   notes: Record<number, string>;
   saveNotes: (newNotes: Record<number, string>) => Promise<void>;
   clearBroadcast: () => void;
@@ -74,7 +79,7 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   const [isBlackout, setIsBlackout] = useState(false);
-  const [broadcastMessage, setBroadcastMessage] = useState<string | null>(null);
+  const [broadcastMessage, setBroadcastMessage] = useState<BroadcastPayload | null>(null);
   const [notes, setNotes] = useState<Record<number, string>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -228,7 +233,10 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
               window.location.replace(`/p/${msg.newCode}`);
             }
           } else if (msg.type === 'broadcast') {
-            setBroadcastMessage(msg.message);
+            setBroadcastMessage({
+              message: typeof msg.message === 'string' ? msg.message : msg.message?.message || '',
+              animal: msg.animal || msg.message?.animal || 'owl'
+            });
           }
         } catch (e) {
           console.error(e);
@@ -313,9 +321,9 @@ export function PresentationProvider({ children }: { children: React.ReactNode }
     }
   }, [sessionCode]);
 
-  const sendBroadcast = useCallback((message: string) => {
+  const sendBroadcast = useCallback((message: string, animal: string = 'owl') => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'broadcast', message }));
+      wsRef.current.send(JSON.stringify({ type: 'broadcast', message, animal }));
     }
   }, []);
 
