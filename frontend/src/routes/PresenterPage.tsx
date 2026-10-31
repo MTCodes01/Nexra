@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { usePresentationContext } from '../context/PresentationContext';
 import PDFViewer from '../components/PDFViewer';
 import QRCodeModal from '../components/QRCodeModal';
+import { MASCOTS } from '../components/AnimalBroadcast';
 
 const API_BASE = (import.meta.env.VITE_PUBLIC_URL || '').replace(/\/$/, '');
 
@@ -40,6 +41,7 @@ export default function PresenterPage() {
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [broadcastInput, setBroadcastInput] = useState('');
+  const [selectedAnimal, setSelectedAnimal] = useState('owl');
   const [currentNote, setCurrentNote] = useState('');
   
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -97,7 +99,11 @@ export default function PresenterPage() {
 
   const handleBroadcastSubmit = () => {
     if (broadcastInput.trim()) {
-      sendBroadcast(broadcastInput.trim());
+      const keys = Object.keys(MASCOTS);
+      const animalToSend = selectedAnimal === 'random'
+        ? keys[Math.floor(Math.random() * keys.length)]
+        : selectedAnimal;
+      sendBroadcast(broadcastInput.trim(), animalToSend);
       setBroadcastInput('');
       setShowBroadcast(false);
     }
@@ -348,11 +354,35 @@ export default function PresenterPage() {
 
       {/* Broadcast Modal */}
       {showBroadcast && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-96 shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">Send Broadcast</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl w-full max-w-md shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-3">Send Mascot Broadcast</h3>
+
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+                Select Animal Mascot
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[...Object.entries(MASCOTS), ['random', { name: 'Random', emoji: '🎲' } as any]].map(([key, val]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedAnimal(key)}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                      selectedAnimal === key
+                        ? 'bg-purple-600/20 border-purple-500 text-purple-300 ring-1 ring-purple-500 shadow-md'
+                        : 'bg-gray-800/60 border-gray-700/60 text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                    }`}
+                  >
+                    <span className="text-xl mb-0.5">{val.emoji}</span>
+                    <span className="text-[11px] font-medium truncate w-full text-center">{val.name.split(' ')[0]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <textarea
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white mb-4 focus:outline-none focus:border-purple-500"
+              className="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 text-white mb-4 focus:outline-none focus:border-purple-500 text-sm"
               placeholder="Type a message to show to all viewers..."
               rows={3}
               value={broadcastInput}
@@ -361,15 +391,15 @@ export default function PresenterPage() {
             <div className="flex gap-3 justify-end">
               <button 
                 onClick={() => setShowBroadcast(false)}
-                className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 text-sm"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleBroadcastSubmit}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 font-medium"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 font-medium text-sm"
               >
-                Send
+                Send Broadcast
               </button>
             </div>
           </div>

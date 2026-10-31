@@ -98,7 +98,7 @@ export function setupWebSocket(server: Server) {
           broadcastToRoom(ws.sessionCode, { type: 'slide_changed', slide: msg.slide });
         }
         else if (msg.type === 'broadcast' && ws.role === 'host') {
-          broadcastToRoom(ws.sessionCode, { type: 'broadcast', message: msg.message });
+          broadcastToRoom(ws.sessionCode, { type: 'broadcast', message: msg.message, animal: msg.animal });
         }
         else if (msg.type === 'blackout' && ws.role === 'host') {
           await prisma.session.update({
